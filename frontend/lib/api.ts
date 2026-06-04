@@ -50,6 +50,22 @@ export type MatchDetail = Match & {
   vip_question_locked: boolean;
 };
 
+export type MatchPointsBreakdownItem = {
+  type: string;
+  title: string;
+  user_answer: string | null;
+  correct_answer: string | null;
+  is_correct: boolean | null;
+  points_awarded: number;
+  max_points: number;
+};
+
+export type MatchPointsBreakdown = {
+  match_id: number;
+  total_points: number;
+  items: MatchPointsBreakdownItem[];
+};
+
 export type Prediction = {
   id: number;
   user_id: number;

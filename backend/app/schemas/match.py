@@ -59,3 +59,19 @@ class MatchQuestionsRead(BaseModel):
     public_questions: list[QuestionRead] = Field(default_factory=list)
     public_question: QuestionRead | None = None
     vip_question: QuestionRead | None = None
+
+
+class MatchPointsBreakdownItem(BaseModel):
+    type: str
+    title: str
+    user_answer: str | None = None
+    correct_answer: str | None = None
+    is_correct: bool | None = None
+    points_awarded: int
+    max_points: int
+
+
+class MatchPointsBreakdownRead(BaseModel):
+    match_id: int
+    total_points: int
+    items: list[MatchPointsBreakdownItem] = Field(default_factory=list)

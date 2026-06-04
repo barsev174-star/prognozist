@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { LocalAuthNotice } from "@/components/LocalAuthNotice";
-import { apiGet, apiPost, hasAccessToken, type MatchDetail, type Prediction } from "@/lib/api";
+import { apiGet, apiPost, hasAccessToken, type MatchDetail, type MatchPointsBreakdown, type Prediction } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta, isPredictionLocked } from "@/lib/matchStatus";
 
 type MatchPredictionFormProps = {
@@ -14,6 +14,7 @@ type MatchPredictionFormProps = {
 export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [pointsBreakdown, setPointsBreakdown] = useState<MatchPointsBreakdown | null>(null);
   const [score1, setScore1] = useState("1");
   const [score2, setScore2] = useState("0");
   const [publicAnswers, setPublicAnswers] = useState<Record<number, string>>({});
@@ -43,6 +44,11 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
         if (predictionRow) {
           setScore1(String(predictionRow.predicted_team_1_score));
           setScore2(String(predictionRow.predicted_team_2_score));
+        }
+        if (matchRow.status === "completed") {
+          apiGet<MatchPointsBreakdown>(`/matches/${matchId}/points-breakdown`)
+            .then(setPointsBreakdown)
+            .catch(() => setPointsBreakdown(null));
         }
       })
       .catch(() => setStatusText("Не удалось загрузить матч."))
@@ -135,6 +141,32 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
           </div>
         ) : null}
       </section>
+
+      {hasResult && pointsBreakdown ? (
+        <section className="rounded-lg bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold">Начисления за матч</h2>
+            <span className="rounded-md bg-surface px-2 py-1 text-xs font-medium">
+              Итого: {pointsBreakdown.total_points}
+            </span>
+          </div>
+          <div className="mt-3 flex flex-col gap-2">
+            {pointsBreakdown.items.map((item, index) => (
+              <div key={`${item.type}-${index}`} className="rounded-md bg-surface px-3 py-2 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-medium">{item.title}</div>
+                  <div className={item.points_awarded > 0 ? "font-semibold text-green-700" : "font-semibold text-muted"}>
+                    +{item.points_awarded}/{item.max_points}
+                  </div>
+                </div>
+                <div className="mt-1 text-xs text-muted">
+                  Ваш ответ: {item.user_answer ?? "не отвечено"} · Правильно: {item.correct_answer ?? "не указано"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <form onSubmit={savePrediction} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
         <div className="text-sm font-semibold">{isLocked ? "Прогноз" : "Точный счет"}</div>
