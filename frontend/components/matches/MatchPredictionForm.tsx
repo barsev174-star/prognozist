@@ -16,7 +16,7 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [score1, setScore1] = useState("1");
   const [score2, setScore2] = useState("0");
-  const [publicAnswer, setPublicAnswer] = useState("true");
+  const [publicAnswers, setPublicAnswers] = useState<Record<number, string>>({});
   const [vipAnswer, setVipAnswer] = useState("true");
   const [statusText, setStatusText] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +37,9 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
       .then(([matchRow, predictionRow]) => {
         setMatch(matchRow);
         setPrediction(predictionRow);
+        setPublicAnswers(
+          Object.fromEntries((matchRow.public_questions.length ? matchRow.public_questions : matchRow.public_question ? [matchRow.public_question] : []).map((question) => [question.id, "true"])),
+        );
         if (predictionRow) {
           setScore1(String(predictionRow.predicted_team_1_score));
           setScore2(String(predictionRow.predicted_team_2_score));
@@ -78,9 +81,14 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
         predicted_team_2_score: Number(score2),
       });
 
-      if (match.public_question) {
-        await apiPost(`/questions/${match.public_question.id}/answer`, {
-          answer: publicAnswer === "true",
+      const publicQuestions = match.public_questions.length
+        ? match.public_questions
+        : match.public_question
+          ? [match.public_question]
+          : [];
+      for (const question of publicQuestions) {
+        await apiPost(`/questions/${question.id}/answer`, {
+          answer: (publicAnswers[question.id] ?? "true") === "true",
         });
       }
 
@@ -151,22 +159,23 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
           <div className="text-right text-sm">{match.team_2}</div>
         </div>
 
-        {match.public_question ? (
-          <label className="flex flex-col gap-2 text-sm">
-            <span>{match.public_question.text}</span>
+        {(match.public_questions.length ? match.public_questions : match.public_question ? [match.public_question] : []).map((question) => (
+          <label key={question.id} className="flex flex-col gap-2 text-sm">
+            <span>{question.text}</span>
             <select
               className="rounded-md border border-black/10 px-3 py-2 disabled:bg-surface disabled:text-muted"
               disabled={isLocked}
-              value={publicAnswer}
-              onChange={(event) => setPublicAnswer(event.target.value)}
+              value={publicAnswers[question.id] ?? "true"}
+              onChange={(event) => setPublicAnswers({ ...publicAnswers, [question.id]: event.target.value })}
             >
               <option value="true">Да</option>
               <option value="false">Нет</option>
             </select>
           </label>
-        ) : (
+        ))}
+        {match.public_questions.length === 0 && !match.public_question ? (
           <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">Публичный вопрос не задан.</div>
-        )}
+        ) : null}
 
         {match.vip_question_locked ? (
           <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">

@@ -8,6 +8,7 @@ import { formatMatchDate, getMatchStatusMeta } from "@/lib/matchStatus";
 
 type Tournament = { id: number; name: string };
 type MatchQuestions = {
+  public_questions: Question[];
   public_question: Question | null;
   vip_question: Question | null;
 };
@@ -29,7 +30,7 @@ export function MatchesAdmin() {
     match_id: "",
     team_1_score: "1",
     team_2_score: "0",
-    public_correct_answer: "true",
+    public_correct_answers: {} as Record<number, string>,
     vip_correct_answer: "true",
   });
   const [message, setMessage] = useState<string | null>(null);
@@ -54,7 +55,17 @@ export function MatchesAdmin() {
       setSelectedQuestions(null);
       return;
     }
-    setSelectedQuestions(await apiGet<MatchQuestions>(`/admin/matches/${matchId}/questions`));
+    const questions = await apiGet<MatchQuestions>(`/admin/matches/${matchId}/questions`);
+    setSelectedQuestions(questions);
+    const publicQuestions = questions.public_questions.length
+      ? questions.public_questions
+      : questions.public_question
+        ? [questions.public_question]
+        : [];
+    setResultForm((current) => ({
+      ...current,
+      public_correct_answers: Object.fromEntries(publicQuestions.map((question) => [question.id, "true"])),
+    }));
   }
 
   useEffect(() => {
@@ -91,7 +102,9 @@ export function MatchesAdmin() {
       await apiPost<Match>(`/admin/matches/${resultForm.match_id}/result`, {
         team_1_score: Number(resultForm.team_1_score),
         team_2_score: Number(resultForm.team_2_score),
-        public_correct_answer: resultForm.public_correct_answer === "true",
+        public_correct_answers: Object.fromEntries(
+          Object.entries(resultForm.public_correct_answers).map(([questionId, answer]) => [questionId, answer === "true"]),
+        ),
         vip_correct_answer: resultForm.vip_correct_answer === "true",
       });
       setMessage("Матч завершен, баллы начислены, итоговая публикация отправлена в VIP-группу при настроенном канале.");
@@ -152,12 +165,28 @@ export function MatchesAdmin() {
             <input type="number" min={0} className={inputClassName} value={resultForm.team_2_score} onChange={(e) => setResultForm({ ...resultForm, team_2_score: e.target.value })} />
           </AdminField>
         </div>
-        <QuestionAnswerField
-          label="Правильный ответ общего вопроса"
-          questionText={selectedQuestions?.public_question?.text}
-          value={resultForm.public_correct_answer}
-          onChange={(value) => setResultForm({ ...resultForm, public_correct_answer: value })}
-        />
+        {(selectedQuestions?.public_questions.length
+          ? selectedQuestions.public_questions
+          : selectedQuestions?.public_question
+            ? [selectedQuestions.public_question]
+            : []
+        ).map((question) => (
+          <QuestionAnswerField
+            key={question.id}
+            label={`Правильный ответ публичного вопроса ${question.slot}`}
+            questionText={question.text}
+            value={resultForm.public_correct_answers[question.id] ?? "true"}
+            onChange={(value) =>
+              setResultForm({
+                ...resultForm,
+                public_correct_answers: { ...resultForm.public_correct_answers, [question.id]: value },
+              })
+            }
+          />
+        ))}
+        {selectedQuestions && selectedQuestions.public_questions.length === 0 && !selectedQuestions.public_question ? (
+          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">Публичные вопросы для выбранного матча не заданы.</div>
+        ) : null}
         <QuestionAnswerField
           label="Правильный ответ VIP-вопроса"
           questionText={selectedQuestions?.vip_question?.text}

@@ -43,6 +43,5 @@ class Match(TimestampMixin, Base):
 
     tournament: Mapped["Tournament"] = relationship()
     predictions: Mapped[list["Prediction"]] = relationship(back_populates="match", cascade="all, delete-orphan")
-    question: Mapped["Question | None"] = relationship(back_populates="match", cascade="all, delete-orphan")
+    questions: Mapped[list["Question"]] = relationship(back_populates="match", cascade="all, delete-orphan")
     vip_question: Mapped["VipQuestion | None"] = relationship(back_populates="match", cascade="all, delete-orphan")
-

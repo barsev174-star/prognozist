@@ -37,14 +37,15 @@ def get_match(
     if match is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
 
-    public_question = db.scalar(select(Question).where(Question.match_id == match.id))
+    public_questions = list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc())))
     vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
     has_vip = current_user.premium_until is not None and current_user.premium_until > datetime.now(UTC)
 
     match_data = MatchRead.model_validate(match).model_dump()
     return MatchDetailRead(
         **match_data,
-        public_question=public_question,
+        public_questions=public_questions,
+        public_question=public_questions[0] if public_questions else None,
         vip_question=vip_question if has_vip else None,
         vip_question_locked=not has_vip and vip_question is not None,
     )

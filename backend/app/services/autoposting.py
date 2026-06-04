@@ -27,20 +27,28 @@ def format_expert_prediction_post(
     question: Question | None,
     vip_question: VipQuestion | None,
 ) -> str:
-    return "\n".join(
+    lines = [
+        f"Матч: {match.team_1} - {match.team_2}",
+        "",
+        "Прогноз эксперта:",
+        f"{match.team_1} {expert.predicted_team_1_score}:{expert.predicted_team_2_score} {match.team_2}",
+        "",
+    ]
+    if question is not None:
+        lines.extend(
+            [
+                f"Общий вопрос: {question.text}",
+                f"Ответ эксперта: {format_bool(expert.question_answer)}",
+                "",
+            ]
+        )
+    lines.extend(
         [
-            f"Матч: {match.team_1} - {match.team_2}",
-            "",
-            "Прогноз эксперта:",
-            f"{match.team_1} {expert.predicted_team_1_score}:{expert.predicted_team_2_score} {match.team_2}",
-            "",
-            f"Общий вопрос: {question.text if question else 'не указан'}",
-            f"Ответ эксперта: {format_bool(expert.question_answer)}",
-            "",
             f"VIP вопрос: {vip_question.text if vip_question else 'не указан'}",
             f"Ответ эксперта: {format_bool(expert.vip_question_answer)}",
         ]
     )
+    return "\n".join(lines)
 
 
 def format_match_result_post(db: Session, match: Match, expert: ExpertPrediction | None) -> str:
@@ -63,7 +71,7 @@ def format_match_result_post(db: Session, match: Match, expert: ExpertPrediction
             func.avg(Prediction.predicted_team_2_score),
         ).where(Prediction.match_id == match.id)
     ).one()
-    question = db.scalar(select(Question).where(Question.match_id == match.id))
+    questions = db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc())).all()
     vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
 
     expert_score = (
@@ -82,7 +90,10 @@ def format_match_result_post(db: Session, match: Match, expert: ExpertPrediction
             f"Итог матча: {match.team_1} {match.team_1_score}:{match.team_2_score} {match.team_2}",
             "",
             f"Прогноз эксперта: {expert_score}",
-            f"Результат общего вопроса: {format_bool(question.correct_answer if question else None)}",
+            *[
+                f"Результат общего вопроса {question.slot}: {format_bool(question.correct_answer)}"
+                for question in questions
+            ],
             f"Результат VIP вопроса: {format_bool(vip_question.correct_answer if vip_question else None)}",
             "",
             f"Угадали точный счет: {exact_count}",

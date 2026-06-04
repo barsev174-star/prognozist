@@ -2,6 +2,7 @@ import asyncio
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -271,7 +272,8 @@ def get_admin_match_questions(match_id: int, db: Session = Depends(get_db)) -> M
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
 
     return MatchQuestionsRead(
-        public_question=db.scalar(select(Question).where(Question.match_id == match.id)),
+        public_questions=list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc()))),
+        public_question=db.scalar(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc())),
         vip_question=db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id)),
     )
 
@@ -297,14 +299,18 @@ def enter_match_result(match_id: int, payload: MatchResultUpdate, db: Session = 
     match.team_2_score = payload.team_2_score
     match.status = MatchStatus.calculating
 
-    question = db.scalar(select(Question).where(Question.match_id == match.id))
-    if question is not None:
-        if payload.public_correct_answer is None:
+    questions = list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc())))
+    public_answers = payload.public_correct_answers or {}
+    for question in questions:
+        correct_answer = public_answers.get(question.id)
+        if correct_answer is None and len(questions) == 1:
+            correct_answer = payload.public_correct_answer
+        if correct_answer is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Public question correct answer is required",
+                detail=f"Public question #{question.id} correct answer is required",
             )
-        question.correct_answer = payload.public_correct_answer
+        question.correct_answer = correct_answer
 
     vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
     if vip_question is not None:
@@ -329,6 +335,13 @@ def enter_match_result(match_id: int, payload: MatchResultUpdate, db: Session = 
 def create_public_question(payload: QuestionCreate, db: Session = Depends(get_db)) -> Question:
     if db.get(Match, payload.match_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+
+    existing_count = db.scalar(select(sa.func.count()).select_from(Question).where(Question.match_id == payload.match_id))
+    if existing_count is not None and existing_count >= 2:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Match already has two public questions")
+    existing_slot = db.scalar(select(Question).where(Question.match_id == payload.match_id, Question.slot == payload.slot))
+    if existing_slot is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Public question slot is already used")
 
     question = Question(**payload.model_dump())
     db.add(question)
@@ -355,7 +368,7 @@ def create_vip_question(payload: QuestionCreate, db: Session = Depends(get_db)) 
     if db.get(Match, payload.match_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
 
-    question = VipQuestion(**payload.model_dump())
+    question = VipQuestion(**payload.model_dump(exclude={"slot"}))
     db.add(question)
     db.commit()
     db.refresh(question)

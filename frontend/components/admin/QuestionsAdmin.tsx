@@ -14,6 +14,7 @@ type Match = {
 export function QuestionsAdmin() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [matchId, setMatchId] = useState("");
+  const [publicSlot, setPublicSlot] = useState("1");
   const [publicText, setPublicText] = useState("Обе команды забьют?");
   const [vipText, setVipText] = useState("Будет пенальти?");
   const [message, setMessage] = useState<string | null>(null);
@@ -24,17 +25,22 @@ export function QuestionsAdmin() {
         setMatches(rows);
         if (rows[0]) setMatchId(String(rows[0].id));
       })
-      .catch(() => setMessage("Не удалось загрузить матчи."));
+      .catch(() => setMessage("Не удалось загрузить матчи. Проверьте вход в админку."));
   }, []);
 
   async function createPublicQuestion(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
     try {
-      await apiPost("/admin/questions", { match_id: Number(matchId), text: publicText, points: 3 });
-      setMessage("Общий вопрос создан.");
+      await apiPost("/admin/questions", {
+        match_id: Number(matchId),
+        slot: Number(publicSlot),
+        text: publicText,
+        points: 3,
+      });
+      setMessage(`Публичный вопрос #${publicSlot} создан.`);
     } catch {
-      setMessage("Не удалось создать общий вопрос. Возможно, он уже есть у матча.");
+      setMessage("Не удалось создать публичный вопрос. Возможно, этот слот уже занят или у матча уже есть два публичных вопроса.");
     }
   }
 
@@ -52,6 +58,7 @@ export function QuestionsAdmin() {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <form onSubmit={createPublicQuestion} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
+        <h2 className="text-base font-semibold">Публичный вопрос</h2>
         <AdminField label="Матч">
           <select className={inputClassName} value={matchId} onChange={(e) => setMatchId(e.target.value)}>
             {matches.map((match) => (
@@ -59,13 +66,20 @@ export function QuestionsAdmin() {
             ))}
           </select>
         </AdminField>
-        <AdminField label="Общий вопрос">
+        <AdminField label="Номер вопроса">
+          <select className={inputClassName} value={publicSlot} onChange={(e) => setPublicSlot(e.target.value)}>
+            <option value="1">Публичный вопрос 1</option>
+            <option value="2">Публичный вопрос 2</option>
+          </select>
+        </AdminField>
+        <AdminField label="Текст вопроса">
           <input className={inputClassName} value={publicText} onChange={(e) => setPublicText(e.target.value)} />
         </AdminField>
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать общий вопрос</button>
+        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать публичный вопрос</button>
       </form>
 
       <form onSubmit={createVipQuestion} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
+        <h2 className="text-base font-semibold">VIP-вопрос</h2>
         <AdminField label="Матч">
           <select className={inputClassName} value={matchId} onChange={(e) => setMatchId(e.target.value)}>
             {matches.map((match) => (
@@ -73,7 +87,7 @@ export function QuestionsAdmin() {
             ))}
           </select>
         </AdminField>
-        <AdminField label="VIP-вопрос">
+        <AdminField label="Текст вопроса">
           <input className={inputClassName} value={vipText} onChange={(e) => setVipText(e.target.value)} />
         </AdminField>
         <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать VIP-вопрос</button>
@@ -83,4 +97,3 @@ export function QuestionsAdmin() {
     </div>
   );
 }
-

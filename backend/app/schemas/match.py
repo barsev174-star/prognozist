@@ -34,6 +34,7 @@ class MatchResultUpdate(BaseModel):
     team_1_score: int = Field(ge=0)
     team_2_score: int = Field(ge=0)
     public_correct_answer: bool | None = None
+    public_correct_answers: dict[int, bool] | None = None
     vip_correct_answer: bool | None = None
 
 
@@ -48,11 +49,13 @@ class MatchRead(MatchBase):
 
 
 class MatchDetailRead(MatchRead):
+    public_questions: list[QuestionRead] = Field(default_factory=list)
     public_question: QuestionRead | None = None
     vip_question: QuestionRead | None = None
     vip_question_locked: bool = True
 
 
 class MatchQuestionsRead(BaseModel):
+    public_questions: list[QuestionRead] = Field(default_factory=list)
     public_question: QuestionRead | None = None
     vip_question: QuestionRead | None = None

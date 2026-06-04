@@ -93,8 +93,10 @@ def score_completed_match(db: Session, match: Match) -> None:
             check_prediction_achievements(db, user.id)
             check_points_achievements(db, user)
 
-    question = db.scalar(select(Question).where(Question.match_id == match.id))
-    if question is not None and question.correct_answer is not None:
+    questions = db.scalars(select(Question).where(Question.match_id == match.id)).all()
+    for question in questions:
+        if question.correct_answer is None:
+            continue
         answers = db.scalars(select(QuestionAnswer).where(QuestionAnswer.question_id == question.id)).all()
         for answer in answers:
             points = score_yes_no_answer(answer.answer, question.correct_answer, question.points)

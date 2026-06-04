@@ -20,6 +20,7 @@ export type AuthResponse = {
 export type Question = {
   id: number;
   match_id: number;
+  slot: number | null;
   text: string;
   correct_answer: boolean | null;
   points: number;
@@ -43,6 +44,7 @@ export type Match = {
 };
 
 export type MatchDetail = Match & {
+  public_questions: Question[];
   public_question: Question | null;
   vip_question: Question | null;
   vip_question_locked: boolean;
