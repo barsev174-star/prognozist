@@ -1,0 +1,61 @@
+name: predictions
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: predictions_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-predictions}
+      POSTGRES_USER: ${POSTGRES_USER:-predictions}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-predictions}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-predictions} -d ${POSTGRES_DB:-predictions}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: predictions_backend
+    env_file:
+      - .env
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  bot:
+    build:
+      context: ./bot
+    container_name: predictions_bot
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    volumes:
+      - ./bot:/app
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: predictions_frontend
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
