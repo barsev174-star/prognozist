@@ -13,4 +13,3 @@ export default async function MatchPage({ params }: { params: Promise<{ matchId:
     </>
   );
 }
-
