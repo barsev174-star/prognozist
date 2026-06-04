@@ -9,7 +9,7 @@ from services.api_client import confirm_vip_payment, format_premium_until, upser
 router = Router()
 
 
-@router.message(F.text == "💎 VIP")
+@router.message(F.text == "VIP")
 async def handle_vip_button(message: Message) -> None:
     await upsert_bot_user(
         telegram_id=message.from_user.id,
