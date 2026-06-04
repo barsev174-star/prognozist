@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { authenticateTelegram, type UserProfile } from "@/lib/api";
-import { getTelegramInitData } from "@/lib/telegram";
+import { waitForTelegramInitData } from "@/lib/telegram";
 
 type AuthGateProps = {
   children: (user: UserProfile) => ReactNode;
@@ -20,22 +20,42 @@ export function AuthGate({ children }: AuthGateProps) {
   const [state, setState] = useState<AuthState>({ status: "loading" });
 
   useEffect(() => {
-    const initData = getTelegramInitData();
-    window.Telegram?.WebApp?.ready?.();
+    let isMounted = true;
 
-    if (!initData) {
-      setState({ status: "outside_telegram" });
-      return;
+    async function authenticate() {
+      const initData = await waitForTelegramInitData();
+      window.Telegram?.WebApp?.ready?.();
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (!initData) {
+        setState({ status: "outside_telegram" });
+        return;
+      }
+
+      authenticateTelegram(initData)
+        .then((response) => {
+          if (!isMounted) {
+            return;
+          }
+          sessionStorage.setItem("access_token", response.access_token);
+          setState({ status: "ready", user: response.user });
+        })
+        .catch(() => {
+          if (!isMounted) {
+            return;
+          }
+          setState({ status: "error", message: "Не удалось войти через Telegram." });
+        });
     }
 
-    authenticateTelegram(initData)
-      .then((response) => {
-        sessionStorage.setItem("access_token", response.access_token);
-        setState({ status: "ready", user: response.user });
-      })
-      .catch(() => {
-        setState({ status: "error", message: "Не удалось войти через Telegram." });
-      });
+    authenticate();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (state.status === "loading") {

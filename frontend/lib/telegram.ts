@@ -10,6 +10,21 @@ export function getTelegramInitData(): string | null {
   return window.Telegram?.WebApp?.initData ?? null;
 }
 
+export async function waitForTelegramInitData(timeoutMs = 10000): Promise<string | null> {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const initData = getTelegramInitData();
+    if (initData) {
+      return initData;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  return getTelegramInitData();
+}
+
 declare global {
   interface Window {
     Telegram?: {
