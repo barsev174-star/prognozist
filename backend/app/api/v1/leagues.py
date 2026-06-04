@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models import League, LeagueMember, LeagueStatus, Tournament, TournamentStatus, User
-from app.schemas.league import LeagueCreate, LeagueDetail, LeagueJoinRequest, LeagueRankingResponse, LeagueRead
+from app.schemas.league import LeagueCreate, LeagueDetail, LeagueJoinRequest, LeagueRankingResponse, LeagueRead, LeagueUpdate
 from app.services.rankings import build_league_ranking
 
 router = APIRouter(prefix="/leagues", tags=["Leagues"])
@@ -155,6 +155,28 @@ def get_league(
     return to_league_detail(db, league, current_user)
 
 
+@router.patch("/{league_id}", response_model=LeagueDetail)
+def update_league(
+    league_id: int,
+    payload: LeagueUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> LeagueDetail:
+    league = db.get(League, league_id)
+    if league is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="League not found")
+    if league.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only league owner can edit league")
+    ensure_joinable_league(league)
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(league, field, value)
+
+    db.commit()
+    db.refresh(league)
+    return to_league_detail(db, league, current_user)
+
+
 @router.get("/{league_id}/ranking", response_model=LeagueRankingResponse)
 def get_league_with_ranking(
     league_id: int,
@@ -171,4 +193,3 @@ def get_league_with_ranking(
         league=to_league_detail(db, league, current_user),
         ranking=build_league_ranking(db, league.id, current_user),
     )
-

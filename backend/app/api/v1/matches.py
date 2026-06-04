@@ -46,6 +46,6 @@ def get_match(
         **match_data,
         public_questions=public_questions,
         public_question=public_questions[0] if public_questions else None,
-        vip_question=vip_question if has_vip else None,
+        vip_question=vip_question,
         vip_question_locked=not has_vip and vip_question is not None,
     )

@@ -13,6 +13,12 @@ class LeagueCreate(BaseModel):
     prize_description: str | None = None
 
 
+class LeagueUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    prize_description: str | None = None
+
+
 class LeagueJoinRequest(BaseModel):
     invite_code: str = Field(min_length=1, max_length=64)
 
@@ -42,4 +48,3 @@ class LeagueDetail(LeagueRead):
 class LeagueRankingResponse(BaseModel):
     league: LeagueDetail
     ranking: RankingResponse
-

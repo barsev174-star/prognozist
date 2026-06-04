@@ -162,6 +162,7 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
         {(match.public_questions.length ? match.public_questions : match.public_question ? [match.public_question] : []).map((question) => (
           <label key={question.id} className="flex flex-col gap-2 text-sm">
             <span>{question.text}</span>
+            <span className="text-xs text-muted">+{question.points} балл{question.points === 1 ? "" : question.points < 5 ? "а" : "ов"}</span>
             <select
               className="rounded-md border border-black/10 px-3 py-2 disabled:bg-surface disabled:text-muted"
               disabled={isLocked}
@@ -177,22 +178,22 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
           <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">Публичный вопрос не задан.</div>
         ) : null}
 
-        {match.vip_question_locked ? (
-          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">
-            VIP-вопрос доступен только с активной подпиской.
-          </div>
-        ) : match.vip_question ? (
+        {match.vip_question ? (
           <label className="flex flex-col gap-2 text-sm">
             <span>{match.vip_question.text}</span>
+            <span className="text-xs text-muted">+{match.vip_question.points} балл{match.vip_question.points === 1 ? "" : match.vip_question.points < 5 ? "а" : "ов"}</span>
             <select
               className="rounded-md border border-black/10 px-3 py-2 disabled:bg-surface disabled:text-muted"
-              disabled={isLocked}
+              disabled={isLocked || match.vip_question_locked}
               value={vipAnswer}
               onChange={(event) => setVipAnswer(event.target.value)}
             >
               <option value="true">Да</option>
               <option value="false">Нет</option>
             </select>
+            {match.vip_question_locked ? (
+              <span className="text-xs text-muted">Ответ доступен только с активной VIP-подпиской.</span>
+            ) : null}
           </label>
         ) : null}
 

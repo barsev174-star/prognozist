@@ -78,6 +78,23 @@ export type RankingResponse = {
   current_user_entry: RankingEntry | null;
 };
 
+export type League = {
+  id: number;
+  owner_id: number;
+  tournament_id: number;
+  name: string;
+  description: string | null;
+  prize_description: string | null;
+  invite_code: string;
+  status: string;
+  members_count: number;
+  is_owner: boolean;
+  is_member: boolean;
+  created_at: string;
+  completed_at: string | null;
+  updated_at: string;
+};
+
 function getToken(): string | null {
   return typeof window !== "undefined" ? sessionStorage.getItem("access_token") : null;
 }

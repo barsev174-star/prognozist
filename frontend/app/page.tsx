@@ -14,6 +14,11 @@ const sections = [
 ];
 
 export default function HomePage() {
+  function logout() {
+    sessionStorage.removeItem("access_token");
+    window.location.href = "/dev-login";
+  }
+
   return (
     <AuthGate>
       {(user) => (
@@ -38,10 +43,17 @@ export default function HomePage() {
                 </Link>
               ))}
             </nav>
+
+            <button
+              type="button"
+              className="rounded-lg border border-black/10 bg-white px-4 py-3 text-sm font-medium text-muted shadow-sm"
+              onClick={logout}
+            >
+              Выйти из учётки
+            </button>
           </div>
         </main>
       )}
     </AuthGate>
   );
 }
-
