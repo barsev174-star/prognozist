@@ -51,3 +51,8 @@ class MatchDetailRead(MatchRead):
     public_question: QuestionRead | None = None
     vip_question: QuestionRead | None = None
     vip_question_locked: bool = True
+
+
+class MatchQuestionsRead(BaseModel):
+    public_question: QuestionRead | None = None
+    vip_question: QuestionRead | None = None

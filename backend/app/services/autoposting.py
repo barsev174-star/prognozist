@@ -21,7 +21,12 @@ def format_bool(value: bool | None) -> str:
     return "Да" if value else "Нет"
 
 
-def format_expert_prediction_post(match: Match, expert: ExpertPrediction, question: Question | None, vip_question: VipQuestion | None) -> str:
+def format_expert_prediction_post(
+    match: Match,
+    expert: ExpertPrediction,
+    question: Question | None,
+    vip_question: VipQuestion | None,
+) -> str:
     return "\n".join(
         [
             f"Матч: {match.team_1} - {match.team_2}",

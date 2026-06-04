@@ -9,7 +9,7 @@ from app.core.permissions import get_current_admin
 from app.db.session import get_db
 from app.models import ExpertPrediction, League, Match, MatchStatus, Question, Season, Tournament, User, VipQuestion
 from app.schemas.expert import ExpertPredictionCreate, ExpertPredictionRead, ExpertPredictionUpdate
-from app.schemas.match import MatchCreate, MatchRead, MatchResultUpdate, MatchUpdate
+from app.schemas.match import MatchCreate, MatchQuestionsRead, MatchRead, MatchResultUpdate, MatchUpdate
 from app.schemas.question import QuestionCreate, QuestionRead, QuestionUpdate
 from app.schemas.season import SeasonCreate, SeasonRead, SeasonUpdate
 from app.schemas.tournament import (
@@ -163,8 +163,6 @@ def create_match(payload: MatchCreate, db: Session = Depends(get_db)) -> Match:
     db.add(match)
     db.commit()
     db.refresh(match)
-    expert = db.scalar(select(ExpertPrediction).where(ExpertPrediction.match_id == match.id))
-    asyncio.run(publish_to_vip_channel(format_match_result_post(db, match, expert)))
     return match
 
 
@@ -266,6 +264,18 @@ def update_match(match_id: int, payload: MatchUpdate, db: Session = Depends(get_
     return match
 
 
+@router.get("/matches/{match_id}/questions", response_model=MatchQuestionsRead)
+def get_admin_match_questions(match_id: int, db: Session = Depends(get_db)) -> MatchQuestionsRead:
+    match = db.get(Match, match_id)
+    if match is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+
+    return MatchQuestionsRead(
+        public_question=db.scalar(select(Question).where(Question.match_id == match.id)),
+        vip_question=db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id)),
+    )
+
+
 @router.delete("/matches/{match_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_match(match_id: int, db: Session = Depends(get_db)) -> None:
     match = db.get(Match, match_id)
@@ -310,6 +320,8 @@ def enter_match_result(match_id: int, payload: MatchResultUpdate, db: Session = 
 
     db.commit()
     db.refresh(match)
+    expert = db.scalar(select(ExpertPrediction).where(ExpertPrediction.match_id == match.id))
+    asyncio.run(publish_to_vip_channel(format_match_result_post(db, match, expert)))
     return match
 
 

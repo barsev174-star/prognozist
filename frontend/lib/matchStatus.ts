@@ -11,7 +11,7 @@ export function isPredictionLocked(match: Match): boolean {
 export function getMatchStatusMeta(match: Match): { label: string; dotClassName: string; textClassName: string } {
   if (match.status === "completed") {
     return {
-      label: "Завершен",
+      label: "Матч завершен, баллы начислены",
       dotClassName: "bg-neutral-400",
       textClassName: "text-neutral-600",
     };
@@ -25,17 +25,9 @@ export function getMatchStatusMeta(match: Match): { label: string; dotClassName:
     };
   }
 
-  if (match.status === "calculating") {
+  if (match.status === "calculating" || new Date(match.start_time).getTime() <= Date.now()) {
     return {
-      label: "Подсчет очков",
-      dotClassName: "bg-amber-500",
-      textClassName: "text-amber-700",
-    };
-  }
-
-  if (new Date(match.start_time).getTime() <= Date.now()) {
-    return {
-      label: "Прогнозы закрыты",
+      label: "Матч завершен, идет начисление баллов",
       dotClassName: "bg-amber-500",
       textClassName: "text-amber-700",
     };

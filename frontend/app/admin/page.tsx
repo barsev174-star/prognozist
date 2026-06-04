@@ -7,14 +7,14 @@ const adminSections = [
   { href: "/admin/questions", label: "Вопросы" },
   { href: "/admin/expert", label: "Эксперт" },
   { href: "/admin/users", label: "Пользователи" },
-  { href: "/admin/logs", label: "Логи" }
+  { href: "/admin/logs", label: "Логи" },
 ];
 
 export default function AdminPage() {
   return (
     <main className="min-h-screen px-4 py-5">
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <h1 className="text-2xl font-semibold">Admin Panel</h1>
+        <h1 className="text-2xl font-semibold">Админка</h1>
         <nav className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {adminSections.map((section) => (
             <Link
