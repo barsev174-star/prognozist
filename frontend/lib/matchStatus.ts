@@ -27,7 +27,7 @@ export function getMatchStatusMeta(match: Match): { label: string; dotClassName:
 
   if (match.status === "calculating" || new Date(match.start_time).getTime() <= Date.now()) {
     return {
-      label: "Матч завершен, идет начисление баллов",
+      label: "Ожидание начисления баллов",
       dotClassName: "bg-amber-500",
       textClassName: "text-amber-700",
     };
