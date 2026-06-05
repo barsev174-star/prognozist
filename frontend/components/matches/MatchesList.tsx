@@ -7,6 +7,10 @@ import { LocalAuthNotice } from "@/components/LocalAuthNotice";
 import { apiGet, hasAccessToken, type Match } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta, isMatchArchived } from "@/lib/matchStatus";
 
+function byCompletionTimeDesc(left: Match, right: Match): number {
+  return new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime();
+}
+
 export function MatchesList() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +34,7 @@ export function MatchesList() {
   const { activeMatches, archivedMatches } = useMemo(
     () => ({
       activeMatches: matches.filter((match) => !isMatchArchived(match)),
-      archivedMatches: matches.filter(isMatchArchived),
+      archivedMatches: matches.filter(isMatchArchived).sort(byCompletionTimeDesc),
     }),
     [matches],
   );
