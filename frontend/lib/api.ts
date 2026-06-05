@@ -111,6 +111,29 @@ export type League = {
   updated_at: string;
 };
 
+export type AdminSystemLog = {
+  id: number;
+  event_type: string;
+  user_id: number | null;
+  telegram_id: number | null;
+  username: string | null;
+  first_name: string | null;
+  payload_json: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export type AdminPointsLog = {
+  id: number;
+  user_id: number;
+  telegram_id: number | null;
+  username: string | null;
+  first_name: string | null;
+  source_type: string;
+  source_id: number;
+  points: number;
+  created_at: string;
+};
+
 function getToken(): string | null {
   return typeof window !== "undefined" ? sessionStorage.getItem("access_token") : null;
 }

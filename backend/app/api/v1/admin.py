@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.core.permissions import get_current_admin
 from app.db.session import get_db
-from app.models import ExpertPrediction, League, Match, MatchStatus, Question, Season, Tournament, User, VipQuestion
+from app.models import ExpertPrediction, League, Match, MatchStatus, PointsLog, Question, Season, SystemLog, Tournament, User, VipQuestion
 from app.schemas.expert import ExpertPredictionCreate, ExpertPredictionRead, ExpertPredictionUpdate
+from app.schemas.log import AdminPointsLogRead, AdminSystemLogRead
 from app.schemas.match import MatchCreate, MatchQuestionsRead, MatchRead, MatchResultUpdate, MatchUpdate
 from app.schemas.question import QuestionCreate, QuestionRead, QuestionUpdate
 from app.schemas.season import SeasonCreate, SeasonRead, SeasonUpdate
@@ -40,6 +41,10 @@ def ensure_date_range(start_date, end_date) -> None:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Start date must be before end date")
 
 
+def add_system_log(db: Session, event_type: str, user: User | None = None, payload: dict | None = None) -> None:
+    db.add(SystemLog(event_type=event_type, user_id=user.id if user else None, payload_json=payload))
+
+
 @router.get("/me", response_model=UserProfile)
 def get_admin_me(current_admin: User = Depends(get_current_admin)) -> User:
     return current_admin
@@ -48,6 +53,45 @@ def get_admin_me(current_admin: User = Depends(get_current_admin)) -> User:
 @router.get("/users", response_model=list[UserProfile])
 def list_users(db: Session = Depends(get_db)) -> list[User]:
     return list(db.scalars(select(User).order_by(User.created_at.desc(), User.id.desc())))
+
+
+@router.get("/logs/system", response_model=list[AdminSystemLogRead])
+def list_system_logs(limit: int = 100, db: Session = Depends(get_db)) -> list[AdminSystemLogRead]:
+    safe_limit = min(max(limit, 1), 500)
+    logs = list(db.scalars(select(SystemLog).order_by(SystemLog.created_at.desc(), SystemLog.id.desc()).limit(safe_limit)))
+    return [
+        AdminSystemLogRead(
+            id=log.id,
+            event_type=log.event_type,
+            user_id=log.user_id,
+            telegram_id=log.user.telegram_id if log.user else None,
+            username=log.user.username if log.user else None,
+            first_name=log.user.first_name if log.user else None,
+            payload_json=log.payload_json,
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]
+
+
+@router.get("/logs/points", response_model=list[AdminPointsLogRead])
+def list_points_logs(limit: int = 100, db: Session = Depends(get_db)) -> list[AdminPointsLogRead]:
+    safe_limit = min(max(limit, 1), 500)
+    logs = list(db.scalars(select(PointsLog).order_by(PointsLog.created_at.desc(), PointsLog.id.desc()).limit(safe_limit)))
+    return [
+        AdminPointsLogRead(
+            id=log.id,
+            user_id=log.user_id,
+            telegram_id=log.user.telegram_id if log.user else None,
+            username=log.user.username if log.user else None,
+            first_name=log.user.first_name if log.user else None,
+            source_type=log.source_type,
+            source_id=log.source_id,
+            points=log.points,
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]
 
 
 @router.patch("/users/{user_id}", response_model=UserProfile)
@@ -68,13 +112,25 @@ def update_user(
     for field, value in data.items():
         setattr(user, field, value)
 
+    log_changes = {key: value.isoformat() if isinstance(value, datetime) else value for key, value in data.items()}
+    add_system_log(
+        db,
+        "admin_user_updated",
+        user=current_admin,
+        payload={"target_user_id": user.id, "changes": log_changes},
+    )
     db.commit()
     db.refresh(user)
     return user
 
 
 @router.post("/users/{user_id}/grant-vip", response_model=UserProfile)
-def grant_user_vip(user_id: int, payload: UserGrantVipRequest, db: Session = Depends(get_db)) -> User:
+def grant_user_vip(
+    user_id: int,
+    payload: UserGrantVipRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+) -> User:
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -85,6 +141,12 @@ def grant_user_vip(user_id: int, payload: UserGrantVipRequest, db: Session = Dep
         telegram_payment_charge_id=f"admin:{user.id}:{datetime.now(UTC).isoformat()}",
         stars_amount=0,
         duration_days=payload.duration_days,
+    )
+    add_system_log(
+        db,
+        "admin_vip_granted",
+        user=current_admin,
+        payload={"target_user_id": user.id, "duration_days": payload.duration_days},
     )
     db.commit()
     db.refresh(user)
@@ -209,12 +271,23 @@ def complete_tournament_endpoint(
 
 
 @router.post("/matches", response_model=MatchRead, status_code=status.HTTP_201_CREATED)
-def create_match(payload: MatchCreate, db: Session = Depends(get_db)) -> Match:
+def create_match(
+    payload: MatchCreate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+) -> Match:
     if db.get(Tournament, payload.tournament_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found")
 
     match = Match(**payload.model_dump())
     db.add(match)
+    db.flush()
+    add_system_log(
+        db,
+        "admin_match_created",
+        user=current_admin,
+        payload={"match_id": match.id, "team_1": match.team_1, "team_2": match.team_2, "start_time": match.start_time.isoformat()},
+    )
     db.commit()
     db.refresh(match)
     return match
@@ -341,7 +414,12 @@ def delete_match(match_id: int, db: Session = Depends(get_db)) -> None:
 
 
 @router.post("/matches/{match_id}/result", response_model=MatchRead)
-def enter_match_result(match_id: int, payload: MatchResultUpdate, db: Session = Depends(get_db)) -> Match:
+def enter_match_result(
+    match_id: int,
+    payload: MatchResultUpdate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+) -> Match:
     match = db.get(Match, match_id)
     if match is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
@@ -377,6 +455,18 @@ def enter_match_result(match_id: int, payload: MatchResultUpdate, db: Session = 
     score_completed_match(db, match)
     match.status = MatchStatus.completed
 
+    add_system_log(
+        db,
+        "admin_match_completed",
+        user=current_admin,
+        payload={
+            "match_id": match.id,
+            "team_1": match.team_1,
+            "team_2": match.team_2,
+            "team_1_score": match.team_1_score,
+            "team_2_score": match.team_2_score,
+        },
+    )
     db.commit()
     db.refresh(match)
     expert = db.scalar(select(ExpertPrediction).where(ExpertPrediction.match_id == match.id))
