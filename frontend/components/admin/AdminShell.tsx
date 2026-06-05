@@ -24,6 +24,11 @@ export function AdminShell({ title, children }: { title: string; children: React
     setIsReady(true);
   }, []);
 
+  function logout() {
+    sessionStorage.removeItem("access_token");
+    window.location.href = "/dev-login";
+  }
+
   return (
     <main className="min-h-screen bg-surface px-4 py-5">
       <div className="mx-auto flex max-w-5xl flex-col gap-5">
@@ -38,6 +43,12 @@ export function AdminShell({ title, children }: { title: string; children: React
                 {item.label}
               </Link>
             ))}
+            <Link href="/" className="rounded-md bg-white px-3 py-2 text-sm shadow-sm">
+              Приложение
+            </Link>
+            <button type="button" onClick={logout} className="rounded-md bg-white px-3 py-2 text-sm shadow-sm">
+              Выйти
+            </button>
           </nav>
         </header>
         {isReady && !hasToken ? <LocalAuthNotice /> : children}

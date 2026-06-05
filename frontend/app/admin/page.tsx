@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 const adminSections = [
@@ -11,10 +13,25 @@ const adminSections = [
 ];
 
 export default function AdminPage() {
+  function logout() {
+    sessionStorage.removeItem("access_token");
+    window.location.href = "/dev-login";
+  }
+
   return (
     <main className="min-h-screen px-4 py-5">
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <h1 className="text-2xl font-semibold">Админка</h1>
+        <header className="flex flex-col gap-3">
+          <h1 className="text-2xl font-semibold">Админка</h1>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/" className="rounded-md bg-white px-3 py-2 text-sm shadow-sm">
+              Приложение
+            </Link>
+            <button type="button" onClick={logout} className="rounded-md bg-white px-3 py-2 text-sm shadow-sm">
+              Выйти
+            </button>
+          </div>
+        </header>
         <nav className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {adminSections.map((section) => (
             <Link

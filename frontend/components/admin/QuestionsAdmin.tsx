@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AdminField, inputClassName } from "@/components/admin/AdminField";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, type Question } from "@/lib/api";
 
 type Match = {
   id: number;
@@ -11,89 +11,200 @@ type Match = {
   team_2: string;
 };
 
+type MatchQuestions = {
+  public_questions: Question[];
+  public_question: Question | null;
+  vip_question: Question | null;
+};
+
+type QuestionForm = {
+  id: number | null;
+  text: string;
+  points: string;
+};
+
+const defaultPublicQuestions: Record<1 | 2, QuestionForm> = {
+  1: { id: null, text: "Обе команды забьют?", points: "3" },
+  2: { id: null, text: "Будет пенальти?", points: "3" },
+};
+
+const defaultVipQuestion: QuestionForm = {
+  id: null,
+  text: "Будет пенальти?",
+  points: "3",
+};
+
 export function QuestionsAdmin() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [matchId, setMatchId] = useState("");
-  const [publicSlot, setPublicSlot] = useState("1");
-  const [publicText, setPublicText] = useState("Обе команды забьют?");
-  const [vipText, setVipText] = useState("Будет пенальти?");
+  const [publicQuestion1, setPublicQuestion1] = useState<QuestionForm>(defaultPublicQuestions[1]);
+  const [publicQuestion2, setPublicQuestion2] = useState<QuestionForm>(defaultPublicQuestions[2]);
+  const [vipQuestion, setVipQuestion] = useState<QuestionForm>(defaultVipQuestion);
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    apiGet<Match[]>("/admin/matches")
-      .then((rows) => {
-        setMatches(rows);
-        if (rows[0]) setMatchId(String(rows[0].id));
-      })
-      .catch(() => setMessage("Не удалось загрузить матчи. Проверьте вход в админку."));
-  }, []);
+  const selectedMatchTitle = useMemo(() => {
+    const match = matches.find((item) => String(item.id) === matchId);
+    return match ? `${match.team_1} - ${match.team_2}` : "Матч не выбран";
+  }, [matches, matchId]);
 
-  async function createPublicQuestion(event: React.FormEvent) {
-    event.preventDefault();
-    setMessage(null);
-    try {
-      await apiPost("/admin/questions", {
-        match_id: Number(matchId),
-        slot: Number(publicSlot),
-        text: publicText,
-        points: 3,
-      });
-      setMessage(`Публичный вопрос #${publicSlot} создан.`);
-    } catch {
-      setMessage("Не удалось создать публичный вопрос. Возможно, этот слот уже занят или у матча уже есть два публичных вопроса.");
+  async function loadMatches() {
+    const rows = await apiGet<Match[]>("/admin/matches");
+    setMatches(rows);
+    if (!matchId && rows[0]) {
+      setMatchId(String(rows[0].id));
     }
   }
 
-  async function createVipQuestion(event: React.FormEvent) {
+  async function loadQuestions(currentMatchId: string) {
+    if (!currentMatchId) {
+      return;
+    }
+
+    const questions = await apiGet<MatchQuestions>(`/admin/matches/${currentMatchId}/questions`);
+    const bySlot = new Map(questions.public_questions.map((question) => [question.slot, question]));
+    const firstQuestion = bySlot.get(1);
+    const secondQuestion = bySlot.get(2);
+
+    setPublicQuestion1({
+      id: firstQuestion?.id ?? null,
+      text: firstQuestion?.text ?? defaultPublicQuestions[1].text,
+      points: String(firstQuestion?.points ?? defaultPublicQuestions[1].points),
+    });
+    setPublicQuestion2({
+      id: secondQuestion?.id ?? null,
+      text: secondQuestion?.text ?? defaultPublicQuestions[2].text,
+      points: String(secondQuestion?.points ?? defaultPublicQuestions[2].points),
+    });
+    setVipQuestion({
+      id: questions.vip_question?.id ?? null,
+      text: questions.vip_question?.text ?? defaultVipQuestion.text,
+      points: String(questions.vip_question?.points ?? defaultVipQuestion.points),
+    });
+  }
+
+  useEffect(() => {
+    loadMatches().catch(() => setMessage("Не удалось загрузить матчи. Проверьте вход в админку."));
+  }, []);
+
+  useEffect(() => {
+    loadQuestions(matchId).catch(() => setMessage("Не удалось загрузить вопросы выбранного матча."));
+  }, [matchId]);
+
+  async function savePublicQuestion(slot: 1 | 2, form: QuestionForm) {
+    const payload = {
+      match_id: Number(matchId),
+      slot,
+      text: form.text,
+      points: Number(form.points),
+    };
+
+    if (form.id) {
+      await apiPatch<Question>(`/admin/questions/${form.id}`, payload);
+    } else {
+      await apiPost<Question>("/admin/questions", payload);
+    }
+  }
+
+  async function saveVipQuestion(form: QuestionForm) {
+    const payload = {
+      match_id: Number(matchId),
+      text: form.text,
+      points: Number(form.points),
+    };
+
+    if (form.id) {
+      await apiPatch<Question>(`/admin/vip-questions/${form.id}`, payload);
+    } else {
+      await apiPost<Question>("/admin/vip-questions", payload);
+    }
+  }
+
+  async function saveAll(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
+
     try {
-      await apiPost("/admin/vip-questions", { match_id: Number(matchId), text: vipText, points: 3 });
-      setMessage("VIP-вопрос создан.");
+      await savePublicQuestion(1, publicQuestion1);
+      await savePublicQuestion(2, publicQuestion2);
+      await saveVipQuestion(vipQuestion);
+      await loadQuestions(matchId);
+      setMessage("Вопросы сохранены.");
     } catch {
-      setMessage("Не удалось создать VIP-вопрос. Возможно, он уже есть у матча.");
+      setMessage("Не удалось сохранить вопросы. Проверьте, что выбран матч, тексты заполнены, а баллы указаны числами.");
     }
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <form onSubmit={createPublicQuestion} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">Публичный вопрос</h2>
+    <form onSubmit={saveAll} className="flex flex-col gap-4">
+      <section className="rounded-lg bg-white p-4 shadow-sm">
         <AdminField label="Матч">
-          <select className={inputClassName} value={matchId} onChange={(e) => setMatchId(e.target.value)}>
+          <select className={inputClassName} value={matchId} onChange={(event) => setMatchId(event.target.value)}>
             {matches.map((match) => (
-              <option key={match.id} value={match.id}>{match.team_1} - {match.team_2}</option>
+              <option key={match.id} value={match.id}>
+                {match.team_1} - {match.team_2}
+              </option>
             ))}
           </select>
         </AdminField>
-        <AdminField label="Номер вопроса">
-          <select className={inputClassName} value={publicSlot} onChange={(e) => setPublicSlot(e.target.value)}>
-            <option value="1">Публичный вопрос 1</option>
-            <option value="2">Публичный вопрос 2</option>
-          </select>
-        </AdminField>
-        <AdminField label="Текст вопроса">
-          <input className={inputClassName} value={publicText} onChange={(e) => setPublicText(e.target.value)} />
-        </AdminField>
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать публичный вопрос</button>
-      </form>
+        <p className="mt-2 text-sm text-muted">Вопросы для матча: {selectedMatchTitle}</p>
+      </section>
 
-      <form onSubmit={createVipQuestion} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">VIP-вопрос</h2>
-        <AdminField label="Матч">
-          <select className={inputClassName} value={matchId} onChange={(e) => setMatchId(e.target.value)}>
-            {matches.map((match) => (
-              <option key={match.id} value={match.id}>{match.team_1} - {match.team_2}</option>
-            ))}
-          </select>
-        </AdminField>
-        <AdminField label="Текст вопроса">
-          <input className={inputClassName} value={vipText} onChange={(e) => setVipText(e.target.value)} />
-        </AdminField>
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать VIP-вопрос</button>
-      </form>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <QuestionCard
+          title="Публичный вопрос 1"
+          form={publicQuestion1}
+          onChange={setPublicQuestion1}
+        />
+        <QuestionCard
+          title="Публичный вопрос 2"
+          form={publicQuestion2}
+          onChange={setPublicQuestion2}
+        />
+        <QuestionCard
+          title="VIP-вопрос"
+          form={vipQuestion}
+          onChange={setVipQuestion}
+        />
+      </div>
 
-      {message ? <p className="text-sm text-muted md:col-span-2">{message}</p> : null}
-    </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Сохранить вопросы</button>
+        {message ? <p className="text-sm text-muted">{message}</p> : null}
+      </div>
+    </form>
+  );
+}
+
+function QuestionCard({
+  title,
+  form,
+  onChange,
+}: {
+  title: string;
+  form: QuestionForm;
+  onChange: (form: QuestionForm) => void;
+}) {
+  return (
+    <section className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
+      <h2 className="text-base font-semibold">{title}</h2>
+      <AdminField label="Текст вопроса">
+        <textarea
+          className={inputClassName}
+          rows={4}
+          value={form.text}
+          onChange={(event) => onChange({ ...form, text: event.target.value })}
+        />
+      </AdminField>
+      <AdminField label="Баллы">
+        <input
+          type="number"
+          min={1}
+          className={inputClassName}
+          value={form.points}
+          onChange={(event) => onChange({ ...form, points: event.target.value })}
+        />
+      </AdminField>
+      {form.id ? <p className="text-xs text-muted">Существующий вопрос #{form.id}</p> : <p className="text-xs text-muted">Новый вопрос</p>}
+    </section>
   );
 }

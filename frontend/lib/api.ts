@@ -181,7 +181,11 @@ export async function authenticateTelegram(initData: string): Promise<AuthRespon
   return response.json() as Promise<AuthResponse>;
 }
 
-export async function authenticateDev(telegramId: number): Promise<AuthResponse> {
+export async function getCurrentUser(): Promise<UserProfile> {
+  return apiGet<UserProfile>("/users/me");
+}
+
+export async function authenticateDev(telegramId: number, profile?: { username?: string; first_name?: string }): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/dev`, {
     method: "POST",
     headers: {
@@ -189,8 +193,8 @@ export async function authenticateDev(telegramId: number): Promise<AuthResponse>
     },
     body: JSON.stringify({
       telegram_id: telegramId,
-      username: "dev_admin",
-      first_name: "Dev Admin"
+      username: profile?.username ?? `player_${telegramId}`,
+      first_name: profile?.first_name ?? `Игрок ${telegramId}`
     })
   });
 

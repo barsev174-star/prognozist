@@ -1,56 +1,51 @@
 # Product Notes
 
-## 2026-06-04 Manual Test Feedback
+## Implemented Feedback
 
-Status: captured, not implemented yet.
+- Each match supports two public questions and one VIP question.
+- Public questions and VIP questions are visible in admin match completion before selecting correct answers.
+- The admin questions page shows three separate fields: public question 1, public question 2, and VIP question.
+- VIP question text is visible to all players, but only active VIP users can answer it.
+- Question cards show how many points can be earned.
+- Completed match cards can show how many points the player earned for score, public questions, and VIP question.
+- Local testing supports logout and dev login.
+- Dev login can create random players with random display names.
+- League owners can edit prize description.
+- League members can see prize description.
+- Frontend can work through one ngrok URL by proxying `/api/v1` to backend.
 
-### Match Questions
+## Current Open Wishes
 
-- Each match should have two public questions and one VIP question.
-- Public question 1 stays as the current base question, for example: "Both teams will score?"
-- Public question 2 should cover a match event and award 3 points, for example: "Will there be a penalty?", "Will there be a red card?", or another event-style yes/no question.
-- VIP question stays unchanged.
+- Add team logos for World Cup 2026 teams.
+- Make match creation faster by selecting teams from a list with prepared logos instead of manually pasting logo URLs.
+- Decide how to manage historical Telegram bot messages.
+- Add stable hosting/public URL for real use instead of temporary ngrok links.
+- Improve normal-player behavior on `/admin`: currently a normal user may see admin navigation but cannot load protected data. A clearer “not admin” screen would be better.
 
-Implementation impact:
+## Bot Message Cleanup Policy Draft
 
-- Current database schema allows only one public question per match through `uq_questions_match`.
-- Backend match detail currently returns `public_question`, not a list of public questions.
-- Frontend prediction form currently renders one public question.
-- Scoring currently scores one public question per match.
-- Admin match completion currently accepts one `public_correct_answer`; it must support answers for both public questions.
+Keep:
 
-### Admin Match Completion
+- prediction confirmations;
+- payment/VIP confirmations;
+- match result messages;
+- point/ranking result messages.
 
-- When completing a match, admin must see the question texts next to each yes/no answer selector.
-- Current UI only shows generic answer selectors, so it is unclear which question is being answered.
+Consider deleting after a delay:
 
-Expected fix:
+- `/start` command messages from the player;
+- temporary bot help/navigation replies;
+- obsolete error messages;
+- repeated “open app” prompts.
 
-- Show public question 1 text, public question 2 text, and VIP question text in the completion form.
-- Keep yes/no answer controls next to each visible question.
+This needs careful implementation because deleting too aggressively can remove information players may need later.
 
-### Current Test Result
+## Manual Testing Focus
 
-- Basic local flow works: Docker, migrations, backend health, frontend, user prediction, match completion, and ranking behavior are otherwise correct.
-
-## 2026-06-04 Follow-up Feedback
-
-Status: partially implemented.
-
-### Implemented
-
-- VIP question text should be visible to all players, while answering remains available only to active VIP users.
-- Match question cards should show how many points each public or VIP question awards.
-- The home page should include a logout button for local testing with multiple users.
-
-### To Implement
-
-- League owners should be able to edit the league prize after creation.
-- League members should clearly see the current prize before and after joining, because the prize may need to be agreed with players after the league is created.
-- Add team logos for World Cup 2026 teams and make match creation faster by selecting a team/logo pair instead of pasting logo URLs manually.
-- Decide how to manage historical Telegram bot messages. Possible directions: delete some user commands, delete outdated bot replies after a delay, or keep important result/payment messages permanently.
-
-### Product Notes
-
-- Prize editing should probably be owner-only and blocked or audited after tournament/league completion.
-- Bot message cleanup needs a policy before implementation, because deleting too much can remove payment, prediction, or result confirmations that players may need later.
+- Create several random players from `http://localhost:3000/dev-login`.
+- For each player, enter the app with `Войти как игрок`.
+- Make predictions for upcoming matches.
+- Answer two public questions.
+- Verify non-VIP users can see VIP question text but cannot answer.
+- Complete a match in admin and verify points breakdown, ranking, and match status.
+- Check leagues with multiple players and edited prize text.

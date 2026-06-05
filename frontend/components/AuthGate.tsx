@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-import { authenticateTelegram, type UserProfile } from "@/lib/api";
+import { authenticateTelegram, getCurrentUser, type UserProfile } from "@/lib/api";
 import { waitForTelegramInitData } from "@/lib/telegram";
 
 type AuthGateProps = {
@@ -23,6 +23,19 @@ export function AuthGate({ children }: AuthGateProps) {
     let isMounted = true;
 
     async function authenticate() {
+      if (sessionStorage.getItem("access_token")) {
+        try {
+          const user = await getCurrentUser();
+          if (!isMounted) {
+            return;
+          }
+          setState({ status: "ready", user });
+          return;
+        } catch {
+          sessionStorage.removeItem("access_token");
+        }
+      }
+
       const initData = await waitForTelegramInitData();
       window.Telegram?.WebApp?.ready?.();
 
