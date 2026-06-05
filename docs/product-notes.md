@@ -21,6 +21,7 @@
 ## Current Open Wishes
 
 - Replace flag icons with official federation crests if real licensed team logos are needed.
+- Show the player's VIP status directly in the app/home screen, not only inside the VIP/profile areas.
 - Decide how to manage historical Telegram bot messages.
 - Add stable hosting/public URL for real use instead of temporary ngrok links.
 

@@ -26,9 +26,6 @@ export default function AdminPage() {
         <header className="flex flex-col gap-3">
           <h1 className="text-2xl font-semibold">Админка</h1>
           <div className="flex flex-wrap gap-2">
-            <Link href="/admin/users" className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-white shadow-sm">
-              Пользователи
-            </Link>
             <Link href="/" className="rounded-md bg-white px-3 py-2 text-sm shadow-sm">
               Приложение
             </Link>

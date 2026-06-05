@@ -110,6 +110,7 @@ Use `http://localhost:3000/dev-login`.
 ## Remaining Product TODOs
 
 - Replace flag icons with official federation crests if real licensed team logos are needed.
+- Show the player's VIP status directly in the app/home screen, not only inside the VIP/profile areas.
 - Decide and implement Telegram bot message cleanup policy. Keep important confirmation/result/payment messages; consider deleting temporary user commands and obsolete bot replies after a delay.
 - Add stable production hosting/public URL instead of temporary ngrok.
 - Continue manual testing with several random players: predictions, question answers, VIP/non-VIP behavior, match completion, points, rankings, leagues.

@@ -36,9 +36,6 @@ export function AdminShell({ title, children }: { title: string; children: React
             ))}
           </nav>
           <div className="flex flex-wrap gap-2">
-            <Link href="/admin/users" className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-white shadow-sm">
-              Пользователи
-            </Link>
             <Link href="/" className="rounded-md bg-white px-3 py-2 text-sm shadow-sm">
               Приложение
             </Link>
