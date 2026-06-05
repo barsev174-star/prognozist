@@ -14,9 +14,10 @@
 - League members can see prize description.
 - Frontend can work through one ngrok URL by proxying `/api/v1` to backend.
 - Admin match creation can select World Cup 2026 teams from a prepared list with visual flag icons.
-- Normal players see a clear “no admin access” screen instead of an empty/broken admin area.
+- Normal players see a clear no-admin-access screen instead of an empty/broken admin area.
 - Admin users page can list players, block/unblock them, edit VIP expiration, and grant test VIP access.
 - Admin logs page shows system events and point-award records.
+- Admin navigation now has one `Пользователи` entry in the sections row; the duplicate dark quick button was removed.
 
 ## Current Open Wishes
 
@@ -39,7 +40,7 @@ Consider deleting after a delay:
 - `/start` command messages from the player;
 - temporary bot help/navigation replies;
 - obsolete error messages;
-- repeated “open app” prompts.
+- repeated open-app prompts.
 
 This needs careful implementation because deleting too aggressively can remove information players may need later.
 
@@ -52,3 +53,5 @@ This needs careful implementation because deleting too aggressively can remove i
 - Verify non-VIP users can see VIP question text but cannot answer.
 - Complete a match in admin and verify points breakdown, ranking, and match status.
 - Check leagues with multiple players and edited prize text.
+- Check admin users: grant VIP, remove VIP, block/unblock a non-admin player.
+- Check admin logs after VIP/admin/match actions.

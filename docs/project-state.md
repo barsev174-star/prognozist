@@ -24,11 +24,12 @@ Admin should be able to:
 - create seasons, tournaments, matches, and match questions;
 - set two public questions and one VIP question per match;
 - enter match results and correct answers;
+- manage users, test VIP access, and review logs;
 - trigger scoring and VIP group result publication.
 
 ## Current Local Launch Scheme
 
-Cloudflare quick tunnel was unstable on this network. The working scheme is one ngrok tunnel to frontend port `3000`.
+Cloudflare quick tunnels were unstable on this network. The working local test scheme is one ngrok tunnel to frontend port `3000`.
 
 Important `.env` values for local/ngrok testing:
 
@@ -106,14 +107,24 @@ Use `http://localhost:3000/dev-login`.
 - Completed match card can show points breakdown.
 - League owner prize editing was added.
 - Frontend `/api/v1` rewrite supports single-ngrok setup.
+- Admin navigation has a single `Пользователи` entry in the sections row; the duplicate dark quick button was removed.
+
+## Current Assessment
+
+Local MVP readiness: about 75%.
+Real public launch readiness: about 55-60%.
+
+The core prediction flow works locally. The remaining work is mostly production readiness, payment/VIP polish, real hosting, and more manual testing.
 
 ## Remaining Product TODOs
 
 - Replace flag icons with official federation crests if real licensed team logos are needed.
 - Show the player's VIP status directly in the app/home screen, not only inside the VIP/profile areas.
-- Decide and implement Telegram bot message cleanup policy. Keep important confirmation/result/payment messages; consider deleting temporary user commands and obsolete bot replies after a delay.
+- Decide and implement Telegram bot message cleanup policy.
 - Add stable production hosting/public URL instead of temporary ngrok.
 - Continue manual testing with several random players: predictions, question answers, VIP/non-VIP behavior, match completion, points, rankings, leagues.
+- Improve expert/admin expert flow. `/admin/expert` is still weak compared with the rest of admin.
+- Prepare final release/support instructions.
 
 ## Notes For Another Chat
 
