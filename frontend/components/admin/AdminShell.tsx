@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import { LocalAuthNotice } from "@/components/LocalAuthNotice";
-import { hasAccessToken } from "@/lib/api";
+import { AdminAccessGate } from "@/components/admin/AdminAccessGate";
 
 const nav = [
   { href: "/admin/seasons", label: "Сезоны" },
@@ -16,14 +14,6 @@ const nav = [
 ];
 
 export function AdminShell({ title, children }: { title: string; children: React.ReactNode }) {
-  const [hasToken, setHasToken] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-
-  useEffect(() => {
-    setHasToken(hasAccessToken());
-    setIsReady(true);
-  }, []);
-
   function logout() {
     sessionStorage.removeItem("access_token");
     window.location.href = "/dev-login";
@@ -51,7 +41,7 @@ export function AdminShell({ title, children }: { title: string; children: React
             </button>
           </nav>
         </header>
-        {isReady && !hasToken ? <LocalAuthNotice /> : children}
+        <AdminAccessGate>{children}</AdminAccessGate>
       </div>
     </main>
   );

@@ -99,6 +99,7 @@ Use `http://localhost:3000/dev-login`.
 - Local dev login supports normal player testing and admin testing separately.
 - Random local players get random names instead of all being `Dev Admin`.
 - Admin match creation has a prepared World Cup 2026 team list with flag icons saved into existing team logo fields.
+- Normal players get a clear no-access screen if they open admin pages.
 - Completed/started matches are closed for new predictions.
 - Completed match card can show points breakdown.
 - League owner prize editing was added.
@@ -110,7 +111,6 @@ Use `http://localhost:3000/dev-login`.
 - Decide and implement Telegram bot message cleanup policy. Keep important confirmation/result/payment messages; consider deleting temporary user commands and obsolete bot replies after a delay.
 - Add stable production hosting/public URL instead of temporary ngrok.
 - Continue manual testing with several random players: predictions, question answers, VIP/non-VIP behavior, match completion, points, rankings, leagues.
-- Improve admin permissions UX: normal players can open `/admin`, but data requests are forbidden. Consider a clearer “not admin” screen.
 
 ## Notes For Another Chat
 

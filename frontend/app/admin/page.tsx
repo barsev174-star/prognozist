@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { AdminAccessGate } from "@/components/admin/AdminAccessGate";
+
 const adminSections = [
   { href: "/admin/seasons", label: "Сезоны" },
   { href: "/admin/tournaments", label: "Турниры" },
@@ -32,17 +34,19 @@ export default function AdminPage() {
             </button>
           </div>
         </header>
-        <nav className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {adminSections.map((section) => (
-            <Link
-              key={section.href}
-              href={section.href}
-              className="rounded-lg bg-white px-4 py-4 text-center text-sm font-medium shadow-sm"
-            >
-              {section.label}
-            </Link>
-          ))}
-        </nav>
+        <AdminAccessGate>
+          <nav className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {adminSections.map((section) => (
+              <Link
+                key={section.href}
+                href={section.href}
+                className="rounded-lg bg-white px-4 py-4 text-center text-sm font-medium shadow-sm"
+              >
+                {section.label}
+              </Link>
+            ))}
+          </nav>
+        </AdminAccessGate>
       </div>
     </main>
   );

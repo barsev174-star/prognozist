@@ -20,6 +20,7 @@ from app.schemas.tournament import (
     TournamentRead,
     TournamentUpdate,
 )
+from app.schemas.user import UserProfile
 from app.services.autoposting import (
     format_expert_prediction_post,
     format_league_result_post,
@@ -36,6 +37,11 @@ router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(get_cu
 def ensure_date_range(start_date, end_date) -> None:
     if start_date > end_date:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Start date must be before end date")
+
+
+@router.get("/me", response_model=UserProfile)
+def get_admin_me(current_admin: User = Depends(get_current_admin)) -> User:
+    return current_admin
 
 
 @router.post("/seasons", response_model=SeasonRead, status_code=status.HTTP_201_CREATED)

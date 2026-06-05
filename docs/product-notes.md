@@ -14,13 +14,13 @@
 - League members can see prize description.
 - Frontend can work through one ngrok URL by proxying `/api/v1` to backend.
 - Admin match creation can select World Cup 2026 teams from a prepared list with visual flag icons.
+- Normal players see a clear “no admin access” screen instead of an empty/broken admin area.
 
 ## Current Open Wishes
 
 - Replace flag icons with official federation crests if real licensed team logos are needed.
 - Decide how to manage historical Telegram bot messages.
 - Add stable hosting/public URL for real use instead of temporary ngrok links.
-- Improve normal-player behavior on `/admin`: currently a normal user may see admin navigation but cannot load protected data. A clearer “not admin” screen would be better.
 
 ## Bot Message Cleanup Policy Draft
 
