@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { LocalAuthNotice } from "@/components/LocalAuthNotice";
+import { TeamLogo } from "@/components/TeamLogo";
 import { apiGet, apiPost, hasAccessToken, type MatchDetail, type MatchPointsBreakdown, type Prediction } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta, isPredictionLocked } from "@/lib/matchStatus";
 
@@ -115,8 +116,12 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-lg bg-white p-4 shadow-sm">
-        <div className="text-lg font-semibold">
-          {match.team_1} - {match.team_2}
+        <div className="flex items-center gap-3 text-lg font-semibold">
+          <TeamLogo logo={match.team_1_logo} name={match.team_1} size="md" />
+          <span className="min-w-0 flex-1 text-center">
+            {match.team_1} - {match.team_2}
+          </span>
+          <TeamLogo logo={match.team_2_logo} name={match.team_2} size="md" />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
           <span>{formatMatchDate(match.start_time)}</span>
@@ -171,7 +176,10 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
       <form onSubmit={savePrediction} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
         <div className="text-sm font-semibold">{isLocked ? "Прогноз" : "Точный счет"}</div>
         <div className="grid grid-cols-[1fr_64px_64px_1fr] items-center gap-2">
-          <div className="text-sm">{match.team_1}</div>
+          <div className="flex items-center gap-2 text-sm">
+            <TeamLogo logo={match.team_1_logo} name={match.team_1} size="sm" />
+            <span>{match.team_1}</span>
+          </div>
           <input
             className="rounded-md border border-black/10 px-3 py-2 text-center disabled:bg-surface disabled:text-muted"
             disabled={isLocked}
@@ -188,7 +196,10 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
             value={score2}
             onChange={(event) => setScore2(event.target.value)}
           />
-          <div className="text-right text-sm">{match.team_2}</div>
+          <div className="flex items-center justify-end gap-2 text-right text-sm">
+            <span>{match.team_2}</span>
+            <TeamLogo logo={match.team_2_logo} name={match.team_2} size="sm" />
+          </div>
         </div>
 
         {(match.public_questions.length ? match.public_questions : match.public_question ? [match.public_question] : []).map((question) => (

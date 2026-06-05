@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { LocalAuthNotice } from "@/components/LocalAuthNotice";
+import { TeamLogo } from "@/components/TeamLogo";
 import { apiGet, hasAccessToken, type Match } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta, isMatchArchived } from "@/lib/matchStatus";
 
@@ -104,8 +105,12 @@ function MatchCard({ match, subdued }: { match: Match; subdued: boolean }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-semibold">
-            {match.team_1} - {match.team_2}
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <TeamLogo logo={match.team_1_logo} name={match.team_1} size="sm" />
+            <span className="min-w-0 flex-1">
+              {match.team_1} - {match.team_2}
+            </span>
+            <TeamLogo logo={match.team_2_logo} name={match.team_2} size="sm" />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
             <span>{formatMatchDate(match.start_time)}</span>

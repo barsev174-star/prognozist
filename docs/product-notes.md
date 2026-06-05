@@ -13,11 +13,11 @@
 - League owners can edit prize description.
 - League members can see prize description.
 - Frontend can work through one ngrok URL by proxying `/api/v1` to backend.
+- Admin match creation can select World Cup 2026 teams from a prepared list with visual flag icons.
 
 ## Current Open Wishes
 
-- Add team logos for World Cup 2026 teams.
-- Make match creation faster by selecting teams from a list with prepared logos instead of manually pasting logo URLs.
+- Replace flag icons with official federation crests if real licensed team logos are needed.
 - Decide how to manage historical Telegram bot messages.
 - Add stable hosting/public URL for real use instead of temporary ngrok links.
 - Improve normal-player behavior on `/admin`: currently a normal user may see admin navigation but cannot load protected data. A clearer “not admin” screen would be better.

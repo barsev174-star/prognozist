@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 
 import { AdminField, inputClassName } from "@/components/admin/AdminField";
+import { TeamLogo } from "@/components/TeamLogo";
 import { apiGet, apiPost, type Match, type Question } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta } from "@/lib/matchStatus";
+import { worldCupTeams, type WorldCupTeam } from "@/lib/worldCupTeams";
 
 type Tournament = { id: number; name: string };
 type MatchQuestions = {
@@ -13,11 +15,21 @@ type MatchQuestions = {
   vip_question: Question | null;
 };
 
+type MatchForm = {
+  tournament_id: string;
+  team_1: string;
+  team_2: string;
+  team_1_logo: string;
+  team_2_logo: string;
+  start_time: string;
+  status: string;
+};
+
 export function MatchesAdmin() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<MatchQuestions | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<MatchForm>({
     tournament_id: "",
     team_1: "",
     team_2: "",
@@ -55,6 +67,7 @@ export function MatchesAdmin() {
       setSelectedQuestions(null);
       return;
     }
+
     const questions = await apiGet<MatchQuestions>(`/admin/matches/${matchId}/questions`);
     setSelectedQuestions(questions);
     const publicQuestions = questions.public_questions.length
@@ -76,9 +89,18 @@ export function MatchesAdmin() {
     loadQuestions(resultForm.match_id).catch(() => setSelectedQuestions(null));
   }, [resultForm.match_id]);
 
+  function applyTeam(side: 1 | 2, team: WorldCupTeam) {
+    setForm((current) => ({
+      ...current,
+      [`team_${side}`]: team.name,
+      [`team_${side}_logo`]: team.logo,
+    }));
+  }
+
   async function createMatch(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
+
     try {
       await apiPost<Match>("/admin/matches", {
         ...form,
@@ -91,13 +113,14 @@ export function MatchesAdmin() {
       setMessage("Матч создан.");
       await load();
     } catch {
-      setMessage("Не удалось создать матч. Проверьте, что выбран турнир и выполнен вход в админку.");
+      setMessage("Не удалось создать матч. Проверьте, что выбран турнир, команды заполнены, и выполнен вход в админку.");
     }
   }
 
   async function completeMatch(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
+
     try {
       await apiPost<Match>(`/admin/matches/${resultForm.match_id}/result`, {
         team_1_score: Number(resultForm.team_1_score),
@@ -107,7 +130,7 @@ export function MatchesAdmin() {
         ),
         vip_correct_answer: resultForm.vip_correct_answer === "true",
       });
-      setMessage("Матч завершен, баллы начислены, итоговая публикация отправлена в VIP-группу при настроенном канале.");
+      setMessage("Матч завершен, баллы начислены, публикация отправлена в VIP-группу при настроенном канале.");
       await load();
       await loadQuestions(resultForm.match_id);
     } catch {
@@ -116,30 +139,38 @@ export function MatchesAdmin() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[360px_420px_1fr]">
+    <div className="grid gap-4 xl:grid-cols-[380px_420px_1fr]">
       <form onSubmit={createMatch} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
         <h2 className="text-base font-semibold">Создать матч</h2>
         <AdminField label="Турнир">
-          <select className={inputClassName} value={form.tournament_id} onChange={(e) => setForm({ ...form, tournament_id: e.target.value })}>
+          <select className={inputClassName} value={form.tournament_id} onChange={(event) => setForm({ ...form, tournament_id: event.target.value })}>
             {tournaments.map((tournament) => (
-              <option key={tournament.id} value={tournament.id}>{tournament.name}</option>
+              <option key={tournament.id} value={tournament.id}>
+                {tournament.name}
+              </option>
             ))}
           </select>
         </AdminField>
-        <AdminField label="Команда 1">
-          <input className={inputClassName} value={form.team_1} onChange={(e) => setForm({ ...form, team_1: e.target.value })} />
-        </AdminField>
-        <AdminField label="Команда 2">
-          <input className={inputClassName} value={form.team_2} onChange={(e) => setForm({ ...form, team_2: e.target.value })} />
-        </AdminField>
-        <AdminField label="Лого команды 1">
-          <input className={inputClassName} value={form.team_1_logo} onChange={(e) => setForm({ ...form, team_1_logo: e.target.value })} />
-        </AdminField>
-        <AdminField label="Лого команды 2">
-          <input className={inputClassName} value={form.team_2_logo} onChange={(e) => setForm({ ...form, team_2_logo: e.target.value })} />
-        </AdminField>
+
+        <TeamSelect
+          title="Команда 1"
+          name={form.team_1}
+          logo={form.team_1_logo}
+          onPresetSelect={(team) => applyTeam(1, team)}
+          onNameChange={(team_1) => setForm({ ...form, team_1 })}
+          onLogoChange={(team_1_logo) => setForm({ ...form, team_1_logo })}
+        />
+        <TeamSelect
+          title="Команда 2"
+          name={form.team_2}
+          logo={form.team_2_logo}
+          onPresetSelect={(team) => applyTeam(2, team)}
+          onNameChange={(team_2) => setForm({ ...form, team_2 })}
+          onLogoChange={(team_2_logo) => setForm({ ...form, team_2_logo })}
+        />
+
         <AdminField label="Время начала">
-          <input type="datetime-local" className={inputClassName} value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+          <input type="datetime-local" className={inputClassName} value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} />
         </AdminField>
         <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать матч</button>
       </form>
@@ -150,19 +181,21 @@ export function MatchesAdmin() {
           <select
             className={inputClassName}
             value={resultForm.match_id}
-            onChange={(e) => setResultForm({ ...resultForm, match_id: e.target.value })}
+            onChange={(event) => setResultForm({ ...resultForm, match_id: event.target.value })}
           >
             {matches.map((match) => (
-              <option key={match.id} value={match.id}>{match.team_1} - {match.team_2}</option>
+              <option key={match.id} value={match.id}>
+                {match.team_1} - {match.team_2}
+              </option>
             ))}
           </select>
         </AdminField>
         <div className="grid grid-cols-2 gap-2">
           <AdminField label="Счет 1">
-            <input type="number" min={0} className={inputClassName} value={resultForm.team_1_score} onChange={(e) => setResultForm({ ...resultForm, team_1_score: e.target.value })} />
+            <input type="number" min={0} className={inputClassName} value={resultForm.team_1_score} onChange={(event) => setResultForm({ ...resultForm, team_1_score: event.target.value })} />
           </AdminField>
           <AdminField label="Счет 2">
-            <input type="number" min={0} className={inputClassName} value={resultForm.team_2_score} onChange={(e) => setResultForm({ ...resultForm, team_2_score: e.target.value })} />
+            <input type="number" min={0} className={inputClassName} value={resultForm.team_2_score} onChange={(event) => setResultForm({ ...resultForm, team_2_score: event.target.value })} />
           </AdminField>
         </div>
         {(selectedQuestions?.public_questions.length
@@ -202,8 +235,12 @@ export function MatchesAdmin() {
           const status = getMatchStatusMeta(match);
           return (
             <div key={match.id} className="border-b border-black/5 p-4 last:border-b-0">
-              <div className="font-medium">{match.team_1} - {match.team_2}</div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+              <div className="flex items-center gap-3 font-medium">
+                <TeamLogo logo={match.team_1_logo} name={match.team_1} size="sm" />
+                <span className="min-w-0">{match.team_1} - {match.team_2}</span>
+                <TeamLogo logo={match.team_2_logo} name={match.team_2} size="sm" />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
                 <span>#{match.id}</span>
                 <span>tournament #{match.tournament_id}</span>
                 <span>{formatMatchDate(match.start_time)}</span>
@@ -220,6 +257,56 @@ export function MatchesAdmin() {
         })}
       </section>
     </div>
+  );
+}
+
+function TeamSelect({
+  title,
+  name,
+  logo,
+  onPresetSelect,
+  onNameChange,
+  onLogoChange,
+}: {
+  title: string;
+  name: string;
+  logo: string;
+  onPresetSelect: (team: WorldCupTeam) => void;
+  onNameChange: (value: string) => void;
+  onLogoChange: (value: string) => void;
+}) {
+  return (
+    <section className="flex flex-col gap-3 rounded-md border border-black/5 bg-surface p-3">
+      <div className="flex items-center gap-3">
+        <TeamLogo logo={logo} name={name || title} />
+        <div className="text-sm font-medium">{title}</div>
+      </div>
+      <AdminField label="Выбрать из ЧМ-2026">
+        <select
+          className={inputClassName}
+          value={worldCupTeams.some((team) => team.name === name) ? name : ""}
+          onChange={(event) => {
+            const team = worldCupTeams.find((item) => item.name === event.target.value);
+            if (team) {
+              onPresetSelect(team);
+            }
+          }}
+        >
+          <option value="">Выберите команду</option>
+          {worldCupTeams.map((team) => (
+            <option key={`${team.confederation}-${team.name}`} value={team.name}>
+              {team.logo} {team.name} · {team.confederation}
+            </option>
+          ))}
+        </select>
+      </AdminField>
+      <AdminField label="Название">
+        <input className={inputClassName} value={name} onChange={(event) => onNameChange(event.target.value)} />
+      </AdminField>
+      <AdminField label="Значок или URL логотипа">
+        <input className={inputClassName} value={logo} onChange={(event) => onLogoChange(event.target.value)} />
+      </AdminField>
+    </section>
   );
 }
 
@@ -240,7 +327,7 @@ function QuestionAnswerField({
         <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">
           {questionText ?? "Вопрос для выбранного матча не задан."}
         </div>
-        <select className={inputClassName} value={value} onChange={(e) => onChange(e.target.value)}>
+        <select className={inputClassName} value={value} onChange={(event) => onChange(event.target.value)}>
           <option value="true">Да</option>
           <option value="false">Нет</option>
         </select>
