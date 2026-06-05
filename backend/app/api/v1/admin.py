@@ -20,7 +20,7 @@ from app.schemas.tournament import (
     TournamentRead,
     TournamentUpdate,
 )
-from app.schemas.user import UserProfile
+from app.schemas.user import UserAdminUpdate, UserGrantVipRequest, UserProfile
 from app.services.autoposting import (
     format_expert_prediction_post,
     format_league_result_post,
@@ -30,6 +30,7 @@ from app.services.autoposting import (
 )
 from app.services.scoring import score_completed_match
 from app.services.tournaments import complete_tournament, get_completion_readiness
+from app.services.vip import activate_vip_subscription
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(get_current_admin)])
 
@@ -42,6 +43,52 @@ def ensure_date_range(start_date, end_date) -> None:
 @router.get("/me", response_model=UserProfile)
 def get_admin_me(current_admin: User = Depends(get_current_admin)) -> User:
     return current_admin
+
+
+@router.get("/users", response_model=list[UserProfile])
+def list_users(db: Session = Depends(get_db)) -> list[User]:
+    return list(db.scalars(select(User).order_by(User.created_at.desc(), User.id.desc())))
+
+
+@router.patch("/users/{user_id}", response_model=UserProfile)
+def update_user(
+    user_id: int,
+    payload: UserAdminUpdate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+) -> User:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    data = payload.model_dump(exclude_unset=True)
+    if user.id == current_admin.id and data.get("is_blocked") is True:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Admin cannot block themselves")
+
+    for field, value in data.items():
+        setattr(user, field, value)
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.post("/users/{user_id}/grant-vip", response_model=UserProfile)
+def grant_user_vip(user_id: int, payload: UserGrantVipRequest, db: Session = Depends(get_db)) -> User:
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    activate_vip_subscription(
+        db,
+        user,
+        telegram_payment_charge_id=f"admin:{user.id}:{datetime.now(UTC).isoformat()}",
+        stars_amount=0,
+        duration_days=payload.duration_days,
+    )
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/seasons", response_model=SeasonRead, status_code=status.HTTP_201_CREATED)

@@ -15,6 +15,7 @@
 - Frontend can work through one ngrok URL by proxying `/api/v1` to backend.
 - Admin match creation can select World Cup 2026 teams from a prepared list with visual flag icons.
 - Normal players see a clear “no admin access” screen instead of an empty/broken admin area.
+- Admin users page can list players, block/unblock them, edit VIP expiration, and grant test VIP access.
 
 ## Current Open Wishes
 

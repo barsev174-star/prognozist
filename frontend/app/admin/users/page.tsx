@@ -1,4 +1,10 @@
-export default function AdminUsersPage() {
-  return <main className="p-5">Users admin</main>;
-}
+import { AdminShell } from "@/components/admin/AdminShell";
+import { UsersAdmin } from "@/components/admin/UsersAdmin";
 
+export default function AdminUsersPage() {
+  return (
+    <AdminShell title="Пользователи">
+      <UsersAdmin />
+    </AdminShell>
+  );
+}

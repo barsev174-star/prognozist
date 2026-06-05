@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic import ConfigDict
 
 
@@ -16,3 +16,11 @@ class UserProfile(BaseModel):
     is_blocked: bool
     created_at: datetime
 
+
+class UserAdminUpdate(BaseModel):
+    is_blocked: bool | None = None
+    premium_until: datetime | None = None
+
+
+class UserGrantVipRequest(BaseModel):
+    duration_days: int = Field(default=30, ge=1, le=366)

@@ -100,6 +100,7 @@ Use `http://localhost:3000/dev-login`.
 - Random local players get random names instead of all being `Dev Admin`.
 - Admin match creation has a prepared World Cup 2026 team list with flag icons saved into existing team logo fields.
 - Normal players get a clear no-access screen if they open admin pages.
+- Admin users page can list players, block/unblock users, edit VIP expiration, and grant test VIP access.
 - Completed/started matches are closed for new predictions.
 - Completed match card can show points breakdown.
 - League owner prize editing was added.
