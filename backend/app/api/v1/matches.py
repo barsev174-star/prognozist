@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -19,19 +20,55 @@ def format_bool_answer(value: bool | None) -> str | None:
     return "Да" if value else "Нет"
 
 
+def build_match_read(match: Match, db: Session, current_user: User) -> MatchRead:
+    public_question_ids = list(db.scalars(select(Question.id).where(Question.match_id == match.id)))
+    vip_question_id = db.scalar(select(VipQuestion.id).where(VipQuestion.match_id == match.id))
+    prediction_exists = db.scalar(
+        select(Prediction.id).where(Prediction.match_id == match.id, Prediction.user_id == current_user.id)
+    )
+    public_answers_count = 0
+    if public_question_ids:
+        public_answers_count = db.scalar(
+            select(sa.func.count())
+            .select_from(QuestionAnswer)
+            .where(QuestionAnswer.user_id == current_user.id, QuestionAnswer.question_id.in_(public_question_ids))
+        ) or 0
+    vip_answer_exists = False
+    if vip_question_id is not None:
+        vip_answer_exists = (
+            db.scalar(
+                select(VipQuestionAnswer.id).where(
+                    VipQuestionAnswer.vip_question_id == vip_question_id,
+                    VipQuestionAnswer.user_id == current_user.id,
+                )
+            )
+            is not None
+        )
+
+    data = MatchRead.model_validate(match).model_dump()
+    data.update(
+        user_prediction_submitted=prediction_exists is not None,
+        user_public_answers_count=public_answers_count,
+        user_vip_answer_submitted=vip_answer_exists,
+        public_questions_count=len(public_question_ids),
+        vip_question_exists=vip_question_id is not None,
+    )
+    return MatchRead(**data)
+
+
 @router.get("", response_model=list[MatchRead])
 def list_matches(
     tournament_id: int | None = None,
     match_status: MatchStatus | None = None,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
-) -> list[Match]:
+    current_user: User = Depends(get_current_user),
+) -> list[MatchRead]:
     query = select(Match).order_by(Match.start_time.asc(), Match.id.asc())
     if tournament_id is not None:
         query = query.where(Match.tournament_id == tournament_id)
     if match_status is not None:
         query = query.where(Match.status == match_status)
-    return list(db.scalars(query))
+    return [build_match_read(match, db, current_user) for match in db.scalars(query)]
 
 
 @router.get("/{match_id}", response_model=MatchDetailRead)

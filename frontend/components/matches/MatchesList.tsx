@@ -35,9 +35,9 @@ export function MatchesList() {
   const { activeMatches, archivedMatches } = useMemo(
     () => ({
       activeMatches: matches.filter((match) => !isMatchArchived(match)),
-      archivedMatches: matches.filter(isMatchArchived).sort(byCompletionTimeDesc),
+      archivedMatches: matches.filter(isMatchArchived).sort(byCompletionTimeDesc)
     }),
-    [matches],
+    [matches]
   );
 
   if (!hasToken && !isLoading) {
@@ -72,7 +72,7 @@ function MatchSection({
   title,
   emptyText,
   matches,
-  subdued = false,
+  subdued = false
 }: {
   title: string;
   emptyText: string;
@@ -99,10 +99,7 @@ function MatchCard({ match, subdued }: { match: Match; subdued: boolean }) {
   const status = getMatchStatusMeta(match);
 
   return (
-    <Link
-      href={`/matches/${match.id}`}
-      className={`rounded-lg bg-white p-4 shadow-sm ${subdued ? "opacity-85" : ""}`}
-    >
+    <Link href={`/matches/${match.id}`} className={`rounded-lg bg-white p-4 shadow-sm ${subdued ? "opacity-85" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -124,9 +121,56 @@ function MatchCard({ match, subdued }: { match: Match; subdued: boolean }) {
               Итоговый счет: {match.team_1_score}:{match.team_2_score}
             </div>
           ) : null}
+          <PlayerMatchProgress match={match} />
         </div>
         <span className="shrink-0 rounded-md bg-surface px-2 py-1 text-xs">#{match.id}</span>
       </div>
     </Link>
+  );
+}
+
+function PlayerMatchProgress({ match }: { match: Match }) {
+  const publicQuestionsCount = match.public_questions_count ?? 0;
+  const publicAnswersCount = match.user_public_answers_count ?? 0;
+  const hasAnyProgress =
+    Boolean(match.user_prediction_submitted) || publicAnswersCount > 0 || Boolean(match.user_vip_answer_submitted);
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+      <span
+        className={
+          match.user_prediction_submitted
+            ? "rounded-md bg-green-100 px-2 py-1 font-medium text-green-800"
+            : "rounded-md bg-surface px-2 py-1 text-muted"
+        }
+      >
+        {match.user_prediction_submitted ? "Прогноз внесен" : "Прогноза нет"}
+      </span>
+      {publicQuestionsCount > 0 ? (
+        <span
+          className={
+            publicAnswersCount >= publicQuestionsCount
+              ? "rounded-md bg-green-100 px-2 py-1 font-medium text-green-800"
+              : "rounded-md bg-surface px-2 py-1 text-muted"
+          }
+        >
+          Ответы: {publicAnswersCount}/{publicQuestionsCount}
+        </span>
+      ) : null}
+      {match.vip_question_exists ? (
+        <span
+          className={
+            match.user_vip_answer_submitted
+              ? "rounded-md bg-green-100 px-2 py-1 font-medium text-green-800"
+              : "rounded-md bg-surface px-2 py-1 text-muted"
+          }
+        >
+          {match.user_vip_answer_submitted ? "VIP ответ есть" : "VIP без ответа"}
+        </span>
+      ) : null}
+      {!hasAnyProgress && publicQuestionsCount === 0 && !match.vip_question_exists ? (
+        <span className="rounded-md bg-surface px-2 py-1 text-muted">Действий пока нет</span>
+      ) : null}
+    </div>
   );
 }

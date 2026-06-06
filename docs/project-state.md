@@ -1,9 +1,14 @@
 # Project State
 
-Last updated: 2026-06-05.
+Last updated: 2026-06-06.
 
 Repository: `barsev174-star/prognozist`.
-Local path on this PC: `C:\Users\barsv\Desktop\Боты\Прогнозист`.
+
+Current local path on this PC:
+
+```text
+C:\Users\zapra\OneDrive\Документы\Prognozist 1.0
+```
 
 ## Purpose
 
@@ -27,13 +32,26 @@ Admin should be able to:
 - manage users, test VIP access, and review logs;
 - trigger scoring and VIP group result publication.
 
-## Current Local Launch Scheme
+## Current Working State
 
-Cloudflare quick tunnels were unstable on this network. The working local test scheme is one ngrok tunnel to frontend port `3000`.
+As of 2026-06-06, the local Docker stack works and the Telegram Mini App works through ngrok.
 
-Important `.env` values for local/ngrok testing:
+Known-good tunnel URL during the latest session:
+
+```text
+https://secret-asleep-filing.ngrok-free.dev
+```
+
+Important: ngrok URLs are temporary unless a reserved domain is configured. If ngrok is restarted and gives a new URL, update `.env` and recreate `backend` and `bot`.
+
+The previous Cloudflare quick tunnel scheme was unstable on this network. It failed with Cloudflare edge TLS/QUIC/HTTP2 errors. Localtunnel also worked intermittently, but ngrok is the current working scheme.
+
+## Important Local Env Values
+
+Keep this shape in `.env` for local/ngrok testing:
 
 ```env
+ENVIRONMENT=local
 TELEGRAM_WEBAPP_URL=https://your-ngrok-url.ngrok-free.dev
 NEXT_PUBLIC_API_BASE_URL=/api/v1
 BACKEND_CORS_ORIGINS=http://localhost:3000,https://your-ngrok-url.ngrok-free.dev
@@ -41,30 +59,75 @@ BACKEND_URL=http://backend:8000
 TELEGRAM_ADMIN_IDS=1321200291
 ```
 
-Frontend proxies `/api/v1/*` to backend through `frontend/next.config.ts`, so only the frontend needs a public ngrok URL.
+Do not print or commit `BOT_TOKEN`.
+
+Frontend proxies `/api/v1/*` to backend through `frontend/next.config.ts`, so only frontend port `3000` needs a public ngrok URL.
 
 ## Start Locally
 
+1. Start Docker Desktop.
+
+2. Open PowerShell in the project directory:
+
 ```powershell
-cd "C:\Users\barsv\Desktop\Боты\Прогнозист"
+cd "C:\Users\zapra\OneDrive\Документы\Prognozist 1.0"
+```
+
+3. Start the app stack:
+
+```powershell
 docker compose up -d
 docker compose exec backend alembic upgrade head
+```
+
+4. In a second PowerShell window, start ngrok and keep that window open:
+
+```powershell
 ngrok http 3000
 ```
 
-After copying the ngrok HTTPS URL into `.env`, recreate app services:
+5. Copy the HTTPS ngrok URL into `.env`:
 
-```powershell
-docker compose up -d --force-recreate backend frontend bot
+```env
+TELEGRAM_WEBAPP_URL=https://your-ngrok-url.ngrok-free.dev
+BACKEND_CORS_ORIGINS=http://localhost:3000,https://your-ngrok-url.ngrok-free.dev
 ```
 
-Useful checks:
+6. Recreate services that read those env values:
+
+```powershell
+docker compose up -d --force-recreate backend bot
+```
+
+7. In Telegram, send `/start` to the bot again and use the fresh "Open app" button. Old bot buttons can still point to an old tunnel URL.
+
+## Useful Checks
 
 ```powershell
 docker compose ps
 docker compose logs -f bot
 docker compose logs -f frontend
 docker compose logs -f backend
+```
+
+Local checks:
+
+```powershell
+curl http://localhost:8000/health
+curl http://localhost:3000/api/v1/health
+```
+
+Ngrok checks:
+
+```powershell
+curl https://your-ngrok-url.ngrok-free.dev/api/v1/health
+```
+
+Ngrok local inspector:
+
+```text
+http://127.0.0.1:4040
+http://127.0.0.1:4040/api/tunnels
 ```
 
 Local URLs:
@@ -84,12 +147,26 @@ Stop ngrok with `Ctrl+C` in the ngrok terminal window.
 
 ## Local Test Login
 
-Use `http://localhost:3000/dev-login`.
+Use:
 
-- Click `Случайный игрок` to generate a test player ID and name.
-- Click `Войти как игрок` to enter the normal Mini App UI.
-- Use Telegram ID `1321200291` and click `Войти в админку` for admin access.
-- Admin pages include `Приложение` and `Выйти` buttons to switch back to app/testing login.
+```text
+http://localhost:3000/dev-login
+```
+
+Expected local test flow:
+
+- Generate a random player to test normal app behavior.
+- Enter as a player to test predictions, questions, rankings, leagues, profile, and VIP screens.
+- Use Telegram ID `1321200291` for admin access.
+- Admin pages include navigation back to the app/testing flow.
+
+If dev login fails with "backend is not running / ENVIRONMENT=local / Telegram ID in TELEGRAM_ADMIN_IDS", first check migrations:
+
+```powershell
+docker compose exec backend alembic upgrade head
+```
+
+The earlier observed cause was an empty database with missing `users` table.
 
 ## Implemented Recently
 
@@ -100,27 +177,33 @@ Use `http://localhost:3000/dev-login`.
 - Local dev login supports normal player testing and admin testing separately.
 - Random local players get random names instead of all being `Dev Admin`.
 - Admin match creation has a prepared World Cup 2026 team list with flag icons saved into existing team logo fields.
-- Normal players get a clear no-access screen if they open admin pages.
+- Normal players get a clear no-admin-access screen if they open admin pages.
 - Admin users page can list players, block/unblock users, edit VIP expiration, and grant test VIP access.
 - Admin logs page shows system events and point-award records.
 - Completed/started matches are closed for new predictions.
 - Completed match card can show points breakdown.
 - League owner prize editing was added.
-- Frontend `/api/v1` rewrite supports single-ngrok setup.
-- Admin navigation has a single `Пользователи` entry in the sections row; the duplicate dark quick button was removed.
+- Frontend `/api/v1` rewrite supports one-public-URL setup.
+- Admin navigation has one Users entry in the sections row; the duplicate dark quick button was removed.
+- Home screen now shows the player's VIP status directly.
+- The duplicate VIP navigation tile was removed from the home sections grid; VIP is entered through the status card.
+- `/vip` is no longer a placeholder. It shows current VIP state, benefits, and how to activate VIP through the bot.
+- Bot now softly deletes the player's `/start` command message; important bot replies and payment/result confirmations are kept.
+- Player match list now shows whether the player has already submitted a score prediction, public-question answers, and VIP answer for each match.
+- Admin match list now shows question readiness before selecting a match: two public questions and VIP question.
 
 ## Current Assessment
 
-Local MVP readiness: about 75%.
-Real public launch readiness: about 55-60%.
+Local MVP readiness: about 84%.
 
-The core prediction flow works locally. The remaining work is mostly production readiness, payment/VIP polish, real hosting, and more manual testing.
+Real public launch readiness: about 60%.
+
+The core prediction flow works locally and the Telegram Mini App works through ngrok. The remaining work is mostly production hosting, payments/VIP polish, broader bot-message policy, and broader manual testing with several player scenarios.
 
 ## Remaining Product TODOs
 
 - Replace flag icons with official federation crests if real licensed team logos are needed.
-- Show the player's VIP status directly in the app/home screen, not only inside the VIP/profile areas.
-- Decide and implement Telegram bot message cleanup policy.
+- Expand Telegram bot message cleanup policy beyond `/start` only if testing proves it is not confusing.
 - Add stable production hosting/public URL instead of temporary ngrok.
 - Continue manual testing with several random players: predictions, question answers, VIP/non-VIP behavior, match completion, points, rankings, leagues.
 - Improve expert/admin expert flow. `/admin/expert` is still weak compared with the rest of admin.
@@ -134,5 +217,7 @@ Before changing anything, run:
 git status --short --branch
 docker compose ps
 ```
+
+This Codex environment may not be able to write to the main `.git` directory. A service clone may exist at `.codex-push-check/` for GitHub syncing/pushing.
 
 Do not revert user changes. If services are already running, keep the existing Docker/ngrok scheme unless the user asks to change it.

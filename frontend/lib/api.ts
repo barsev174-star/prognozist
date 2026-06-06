@@ -41,6 +41,12 @@ export type Match = {
   team_2_score: number | null;
   created_at: string;
   updated_at: string;
+  user_prediction_submitted: boolean | null;
+  user_public_answers_count: number | null;
+  user_vip_answer_submitted: boolean | null;
+  public_questions_count: number | null;
+  vip_question_exists: boolean | null;
+  questions_complete: boolean | null;
 };
 
 export type MatchDetail = Match & {

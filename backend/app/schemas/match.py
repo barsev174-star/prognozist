@@ -46,6 +46,12 @@ class MatchRead(MatchBase):
     team_2_score: int | None
     created_at: datetime
     updated_at: datetime
+    user_prediction_submitted: bool | None = None
+    user_public_answers_count: int | None = None
+    user_vip_answer_submitted: bool | None = None
+    public_questions_count: int | None = None
+    vip_question_exists: bool | None = None
+    questions_complete: bool | None = None
 
 
 class MatchDetailRead(MatchRead):

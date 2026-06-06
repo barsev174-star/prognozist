@@ -2,6 +2,14 @@
 
 ## Implemented Feedback
 
+- Telegram Mini App works locally through one ngrok URL pointed at frontend port `3000`.
+- Backend API works behind the same public URL through frontend `/api/v1` rewrite.
+- Home screen shows the player's VIP status.
+- Home screen no longer duplicates VIP navigation; the status card is the entry point.
+- VIP page shows real status, benefits, and activation instructions instead of a placeholder.
+- Bot softly deletes the player's `/start` command message; important bot replies are kept.
+- Match list shows each player's submitted prediction/question progress per match.
+- Admin match list shows whether questions are fully prepared before match selection.
 - Each match supports two public questions and one VIP question.
 - Public questions and VIP questions are visible in admin match completion before selecting correct answers.
 - The admin questions page shows three separate fields: public question 1, public question 2, and VIP question.
@@ -21,10 +29,10 @@
 
 ## Current Open Wishes
 
+- Move from temporary ngrok URLs to stable hosting or a reserved domain.
 - Replace flag icons with official federation crests if real licensed team logos are needed.
-- Show the player's VIP status directly in the app/home screen, not only inside the VIP/profile areas.
-- Decide how to manage historical Telegram bot messages.
-- Add stable hosting/public URL for real use instead of temporary ngrok links.
+- Decide whether to expand message cleanup beyond `/start` after more Telegram testing.
+- Improve production readiness: secrets, backups, monitoring, real domain, and deploy instructions.
 
 ## Bot Message Cleanup Policy Draft
 
@@ -42,10 +50,11 @@ Consider deleting after a delay:
 - obsolete error messages;
 - repeated open-app prompts.
 
-This needs careful implementation because deleting too aggressively can remove information players may need later.
+Current implementation only deletes the player's `/start` command message. Expanding cleanup needs careful testing because deleting too aggressively can remove information players may need later.
 
 ## Manual Testing Focus
 
+- Start from Telegram `/start` after every tunnel URL change, because old buttons can point to old URLs.
 - Create several random players from `http://localhost:3000/dev-login`.
 - For each player, enter the app with `Войти как игрок`.
 - Make predictions for upcoming matches.

@@ -1,4 +1,5 @@
 from aiogram import Router
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
 
@@ -11,6 +12,7 @@ router = Router()
 
 @router.message(CommandStart())
 async def handle_start(message: Message) -> None:
+    await delete_temporary_user_message(message)
     await upsert_bot_user(
         telegram_id=message.from_user.id,
         username=message.from_user.username,
@@ -33,3 +35,10 @@ async def handle_start(message: Message) -> None:
             ]
         ),
     )
+
+
+async def delete_temporary_user_message(message: Message) -> None:
+    try:
+        await message.delete()
+    except (TelegramBadRequest, TelegramForbiddenError):
+        return

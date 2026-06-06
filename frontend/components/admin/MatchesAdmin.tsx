@@ -185,7 +185,7 @@ export function MatchesAdmin() {
           >
             {matches.map((match) => (
               <option key={match.id} value={match.id}>
-                {match.team_1} - {match.team_2}
+                {formatQuestionReadiness(match)} · {match.team_1} - {match.team_2}
               </option>
             ))}
           </select>
@@ -248,6 +248,7 @@ export function MatchesAdmin() {
                   <span className={`h-2 w-2 rounded-full ${status.dotClassName}`} />
                   {status.label}
                 </span>
+                <QuestionReadinessBadge match={match} />
               </div>
               {match.team_1_score !== null && match.team_2_score !== null ? (
                 <div className="mt-2 text-sm">Итоговый счет: {match.team_1_score}:{match.team_2_score}</div>
@@ -333,5 +334,29 @@ function QuestionAnswerField({
         </select>
       </div>
     </AdminField>
+  );
+}
+
+function formatQuestionReadiness(match: Match): string {
+  const publicCount = match.public_questions_count ?? 0;
+  const vipReady = Boolean(match.vip_question_exists);
+  return publicCount >= 2 && vipReady ? "вопросы OK" : `вопросы ${publicCount}/2${vipReady ? " + VIP" : ""}`;
+}
+
+function QuestionReadinessBadge({ match }: { match: Match }) {
+  const publicCount = match.public_questions_count ?? 0;
+  const vipReady = Boolean(match.vip_question_exists);
+  const isComplete = Boolean(match.questions_complete);
+
+  return (
+    <span
+      className={
+        isComplete
+          ? "inline-flex rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800"
+          : "inline-flex rounded-md bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800"
+      }
+    >
+      {isComplete ? "Вопросы заполнены" : `Вопросы: ${publicCount}/2, VIP ${vipReady ? "есть" : "нет"}`}
+    </span>
   );
 }

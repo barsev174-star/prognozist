@@ -367,11 +367,25 @@ def publish_expert_prediction(
 
 
 @router.get("/matches", response_model=list[MatchRead])
-def list_admin_matches(tournament_id: int | None = None, db: Session = Depends(get_db)) -> list[Match]:
+def list_admin_matches(tournament_id: int | None = None, db: Session = Depends(get_db)) -> list[MatchRead]:
     query = select(Match).order_by(Match.start_time.asc(), Match.id.asc())
     if tournament_id is not None:
         query = query.where(Match.tournament_id == tournament_id)
-    return list(db.scalars(query))
+    return [build_admin_match_read(match, db) for match in db.scalars(query)]
+
+
+def build_admin_match_read(match: Match, db: Session) -> MatchRead:
+    public_questions_count = db.scalar(
+        select(sa.func.count()).select_from(Question).where(Question.match_id == match.id)
+    ) or 0
+    vip_question_exists = db.scalar(select(VipQuestion.id).where(VipQuestion.match_id == match.id)) is not None
+    data = MatchRead.model_validate(match).model_dump()
+    data.update(
+        public_questions_count=public_questions_count,
+        vip_question_exists=vip_question_exists,
+        questions_complete=public_questions_count >= 2 and vip_question_exists,
+    )
+    return MatchRead(**data)
 
 
 @router.patch("/matches/{match_id}", response_model=MatchRead)
