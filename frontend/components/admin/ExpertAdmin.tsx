@@ -20,6 +20,7 @@ type ExpertPrediction = {
   predicted_team_1_score: number;
   predicted_team_2_score: number;
   question_answer: boolean | null;
+  question_2_answer: boolean | null;
   vip_question_answer: boolean | null;
   is_published: boolean;
   published_at: string | null;
@@ -31,6 +32,7 @@ type ExpertForm = {
   predicted_team_1_score: string;
   predicted_team_2_score: string;
   question_answer: string;
+  question_2_answer: string;
   vip_question_answer: string;
 };
 
@@ -38,6 +40,7 @@ const emptyForm: ExpertForm = {
   predicted_team_1_score: "1",
   predicted_team_2_score: "0",
   question_answer: "unset",
+  question_2_answer: "unset",
   vip_question_answer: "unset",
 };
 
@@ -52,7 +55,13 @@ export function ExpertAdmin() {
   const [message, setMessage] = useState<string | null>(null);
 
   const selectedMatch = useMemo(() => matches.find((match) => String(match.id) === matchId) ?? null, [matches, matchId]);
-  const firstPublicQuestion = questions?.public_questions[0] ?? questions?.public_question ?? null;
+  const publicQuestions = questions?.public_questions.length
+    ? questions.public_questions
+    : questions?.public_question
+      ? [questions.public_question]
+      : [];
+  const firstPublicQuestion = publicQuestions[0] ?? null;
+  const secondPublicQuestion = publicQuestions[1] ?? null;
 
   async function loadMatches() {
     const rows = await apiGet<Match[]>("/admin/matches");
@@ -80,6 +89,7 @@ export function ExpertAdmin() {
         predicted_team_1_score: String(expert.predicted_team_1_score),
         predicted_team_2_score: String(expert.predicted_team_2_score),
         question_answer: boolToSelectValue(expert.question_answer),
+        question_2_answer: boolToSelectValue(expert.question_2_answer),
         vip_question_answer: boolToSelectValue(expert.vip_question_answer),
       });
     } catch {
@@ -108,6 +118,7 @@ export function ExpertAdmin() {
       predicted_team_1_score: Number(form.predicted_team_1_score),
       predicted_team_2_score: Number(form.predicted_team_2_score),
       question_answer: selectValueToBool(form.question_answer),
+      question_2_answer: selectValueToBool(form.question_2_answer),
       vip_question_answer: selectValueToBool(form.vip_question_answer),
     };
 
@@ -180,11 +191,18 @@ export function ExpertAdmin() {
         </div>
 
         <QuestionAnswerSelect
-          label="Ответ на публичный вопрос"
+          label="Ответ на публичный вопрос 1"
           questionText={firstPublicQuestion?.text}
           value={form.question_answer}
           disabled={prediction?.is_published}
           onChange={(value) => setForm({ ...form, question_answer: value })}
+        />
+        <QuestionAnswerSelect
+          label="Ответ на публичный вопрос 2"
+          questionText={secondPublicQuestion?.text}
+          value={form.question_2_answer}
+          disabled={prediction?.is_published}
+          onChange={(value) => setForm({ ...form, question_2_answer: value })}
         />
         <QuestionAnswerSelect
           label="Ответ на VIP-вопрос"
@@ -215,13 +233,11 @@ export function ExpertAdmin() {
         {selectedMatch ? <MatchSummary match={selectedMatch} prediction={prediction} /> : null}
         <div className="border-t border-black/5 p-4">
           <h3 className="text-sm font-semibold">Вопросы выбранного матча</h3>
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            <QuestionPreview title="Публичный вопрос эксперта" question={firstPublicQuestion} />
+          <div className="mt-3 grid gap-3 lg:grid-cols-3">
+            <QuestionPreview title="Публичный вопрос эксперта 1" question={firstPublicQuestion} />
+            <QuestionPreview title="Публичный вопрос эксперта 2" question={secondPublicQuestion} />
             <QuestionPreview title="VIP-вопрос" question={questions?.vip_question ?? null} />
           </div>
-          {questions && questions.public_questions.length > 1 ? (
-            <p className="mt-3 text-xs text-muted">Сейчас экспертный прогноз публикует ответ только на первый публичный вопрос.</p>
-          ) : null}
         </div>
       </section>
     </div>

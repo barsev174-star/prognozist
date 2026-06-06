@@ -192,6 +192,7 @@ The earlier observed cause was an empty database with missing `users` table.
 - Player match list now shows whether the player has already submitted a score prediction, public-question answers, and VIP answer for each match.
 - Admin match list now shows question readiness before selecting a match: two public questions and VIP question.
 - `/admin/expert` now has a usable admin flow: select match, create/update expert score prediction, set public/VIP question answers, see publication status, and publish to the VIP channel.
+- Expert predictions now support answers for both public questions plus the VIP question.
 
 ## Current Assessment
 
@@ -207,7 +208,7 @@ The core prediction flow works locally and the Telegram Mini App works through n
 - Expand Telegram bot message cleanup policy beyond `/start` only if testing proves it is not confusing.
 - Add stable production hosting/public URL instead of temporary ngrok.
 - Continue manual testing with several random players: predictions, question answers, VIP/non-VIP behavior, match completion, points, rankings, leagues.
-- Decide whether expert predictions should support answers for both public questions. The current expert model stores one public-question answer and the admin UI maps it to the first public question.
+- Continue production readiness work: stable hosting, secrets, backups, monitoring, real domain, and deploy instructions.
 - Prepare final release/support instructions.
 
 ## Notes For Another Chat

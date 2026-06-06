@@ -24,7 +24,7 @@ def format_bool(value: bool | None) -> str:
 def format_expert_prediction_post(
     match: Match,
     expert: ExpertPrediction,
-    question: Question | None,
+    questions: list[Question],
     vip_question: VipQuestion | None,
 ) -> str:
     lines = [
@@ -34,11 +34,15 @@ def format_expert_prediction_post(
         f"{match.team_1} {expert.predicted_team_1_score}:{expert.predicted_team_2_score} {match.team_2}",
         "",
     ]
-    if question is not None:
+    public_answer_by_slot = {
+        1: expert.question_answer,
+        2: expert.question_2_answer,
+    }
+    for question in questions:
         lines.extend(
             [
-                f"Общий вопрос: {question.text}",
-                f"Ответ эксперта: {format_bool(expert.question_answer)}",
+                f"Общий вопрос {question.slot}: {question.text}",
+                f"Ответ эксперта: {format_bool(public_answer_by_slot.get(question.slot or 1))}",
                 "",
             ]
         )

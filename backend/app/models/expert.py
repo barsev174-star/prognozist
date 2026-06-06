@@ -21,6 +21,7 @@ class ExpertPrediction(TimestampMixin, Base):
     predicted_team_1_score: Mapped[int] = mapped_column(Integer, nullable=False)
     predicted_team_2_score: Mapped[int] = mapped_column(Integer, nullable=False)
     question_answer: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    question_2_answer: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     vip_question_answer: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

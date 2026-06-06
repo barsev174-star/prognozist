@@ -28,6 +28,7 @@
 - Admin navigation now has one `Пользователи` entry in the sections row; the duplicate dark quick button was removed.
 
 - Admin expert page can create/update an expert prediction, show related match questions, and publish the expert prediction to the VIP channel.
+- Expert predictions can store and publish answers for both public questions plus the VIP question.
 
 ## Current Open Wishes
 
@@ -35,7 +36,6 @@
 - Replace flag icons with official federation crests if real licensed team logos are needed.
 - Decide whether to expand message cleanup beyond `/start` after more Telegram testing.
 - Improve production readiness: secrets, backups, monitoring, real domain, and deploy instructions.
-- Decide whether expert predictions need separate answers for both public questions; currently the expert answer maps to the first public question.
 
 ## Bot Message Cleanup Policy Draft
 

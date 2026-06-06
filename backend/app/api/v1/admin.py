@@ -361,9 +361,9 @@ def publish_expert_prediction(
     if match is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
 
-    question = db.scalar(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc(), Question.id.asc()))
+    questions = list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc(), Question.id.asc())))
     vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
-    asyncio.run(publish_to_vip_channel(format_expert_prediction_post(match, expert, question, vip_question)))
+    asyncio.run(publish_to_vip_channel(format_expert_prediction_post(match, expert, questions, vip_question)))
 
     expert.is_published = True
     expert.published_at = datetime.now(UTC)
