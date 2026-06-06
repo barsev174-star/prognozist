@@ -46,6 +46,9 @@ export function MatchesAdmin() {
     vip_correct_answer: "true",
   });
   const [message, setMessage] = useState<string | null>(null);
+  const selectedResultMatch = matches.find((match) => String(match.id) === resultForm.match_id) ?? null;
+  const selectedResultStatus = selectedResultMatch ? getMatchStatusMeta(selectedResultMatch) : null;
+  const isSelectedResultCompleted = selectedResultMatch?.status === "completed";
 
   async function load() {
     const [tournamentRows, matchRows] = await Promise.all([
@@ -190,12 +193,33 @@ export function MatchesAdmin() {
             ))}
           </select>
         </AdminField>
+        {selectedResultMatch && selectedResultStatus ? (
+          <div
+            className={
+              isSelectedResultCompleted
+                ? "rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900"
+                : "rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+            }
+          >
+            <div className="flex items-center gap-2 font-medium">
+              <span className={`h-2 w-2 rounded-full ${selectedResultStatus.dotClassName}`} />
+              {selectedResultStatus.label}
+            </div>
+            {isSelectedResultCompleted && selectedResultMatch.team_1_score !== null && selectedResultMatch.team_2_score !== null ? (
+              <div className="mt-1">
+                Итоговый счет: {selectedResultMatch.team_1_score}:{selectedResultMatch.team_2_score}. Повторное завершение заблокировано.
+              </div>
+            ) : (
+              <div className="mt-1">Матч еще можно завершить после внесения итогового счета и правильных ответов.</div>
+            )}
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-2">
           <AdminField label="Счет 1">
-            <input type="number" min={0} className={inputClassName} value={resultForm.team_1_score} onChange={(event) => setResultForm({ ...resultForm, team_1_score: event.target.value })} />
+            <input type="number" min={0} className={inputClassName} value={resultForm.team_1_score} disabled={isSelectedResultCompleted} onChange={(event) => setResultForm({ ...resultForm, team_1_score: event.target.value })} />
           </AdminField>
           <AdminField label="Счет 2">
-            <input type="number" min={0} className={inputClassName} value={resultForm.team_2_score} onChange={(event) => setResultForm({ ...resultForm, team_2_score: event.target.value })} />
+            <input type="number" min={0} className={inputClassName} value={resultForm.team_2_score} disabled={isSelectedResultCompleted} onChange={(event) => setResultForm({ ...resultForm, team_2_score: event.target.value })} />
           </AdminField>
         </div>
         {(selectedQuestions?.public_questions.length
@@ -209,6 +233,7 @@ export function MatchesAdmin() {
             label={`Правильный ответ публичного вопроса ${question.slot}`}
             questionText={question.text}
             value={resultForm.public_correct_answers[question.id] ?? "true"}
+            disabled={isSelectedResultCompleted}
             onChange={(value) =>
               setResultForm({
                 ...resultForm,
@@ -224,9 +249,12 @@ export function MatchesAdmin() {
           label="Правильный ответ VIP-вопроса"
           questionText={selectedQuestions?.vip_question?.text}
           value={resultForm.vip_correct_answer}
+          disabled={isSelectedResultCompleted}
           onChange={(value) => setResultForm({ ...resultForm, vip_correct_answer: value })}
         />
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Завершить и начислить</button>
+        <button disabled={isSelectedResultCompleted} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+          {isSelectedResultCompleted ? "Матч уже завершен" : "Завершить и начислить"}
+        </button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
       </form>
 
@@ -315,11 +343,13 @@ function QuestionAnswerField({
   label,
   questionText,
   value,
+  disabled,
   onChange,
 }: {
   label: string;
   questionText?: string;
   value: string;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   return (
@@ -328,7 +358,7 @@ function QuestionAnswerField({
         <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">
           {questionText ?? "Вопрос для выбранного матча не задан."}
         </div>
-        <select className={inputClassName} value={value} onChange={(event) => onChange(event.target.value)}>
+        <select className={inputClassName} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
           <option value="true">Да</option>
           <option value="false">Нет</option>
         </select>
