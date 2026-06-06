@@ -314,7 +314,11 @@ def create_expert_prediction(
 
 
 @router.get("/expert-predictions/{match_id}", response_model=ExpertPredictionRead)
-def get_expert_prediction(match_id: int, db: Session = Depends(get_db)) -> ExpertPrediction:
+def get_expert_prediction(
+    match_id: int,
+    db: Session = Depends(get_db),
+    _current_admin: User = Depends(get_current_admin),
+) -> ExpertPrediction:
     expert = db.scalar(select(ExpertPrediction).where(ExpertPrediction.match_id == match_id))
     if expert is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expert prediction not found")
@@ -326,6 +330,7 @@ def update_expert_prediction(
     expert_prediction_id: int,
     payload: ExpertPredictionUpdate,
     db: Session = Depends(get_db),
+    _current_admin: User = Depends(get_current_admin),
 ) -> ExpertPrediction:
     expert = db.get(ExpertPrediction, expert_prediction_id)
     if expert is None:
@@ -344,6 +349,7 @@ def update_expert_prediction(
 def publish_expert_prediction(
     expert_prediction_id: int,
     db: Session = Depends(get_db),
+    _current_admin: User = Depends(get_current_admin),
 ) -> ExpertPrediction:
     expert = db.get(ExpertPrediction, expert_prediction_id)
     if expert is None:
@@ -355,7 +361,7 @@ def publish_expert_prediction(
     if match is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
 
-    question = db.scalar(select(Question).where(Question.match_id == match.id))
+    question = db.scalar(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc(), Question.id.asc()))
     vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
     asyncio.run(publish_to_vip_channel(format_expert_prediction_post(match, expert, question, vip_question)))
 
