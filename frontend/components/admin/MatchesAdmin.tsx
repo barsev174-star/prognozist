@@ -85,7 +85,7 @@ export function MatchesAdmin() {
   }
 
   useEffect(() => {
-    load().catch(() => setMessage("Не удалось загрузить матчи. Проверьте вход в админку."));
+    load().catch(() => setMessage("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РјР°С‚С‡Рё. РџСЂРѕРІРµСЂСЊС‚Рµ РІС…РѕРґ РІ Р°РґРјРёРЅРєСѓ."));
   }, []);
 
   useEffect(() => {
@@ -113,10 +113,10 @@ export function MatchesAdmin() {
         start_time: new Date(form.start_time).toISOString(),
       });
       setForm({ ...form, team_1: "", team_2: "", team_1_logo: "", team_2_logo: "" });
-      setMessage("Матч создан.");
+      setMessage("РњР°С‚С‡ СЃРѕР·РґР°РЅ.");
       await load();
     } catch {
-      setMessage("Не удалось создать матч. Проверьте, что выбран турнир, команды заполнены, и выполнен вход в админку.");
+      setMessage("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РјР°С‚С‡. РџСЂРѕРІРµСЂСЊС‚Рµ, С‡С‚Рѕ РІС‹Р±СЂР°РЅ С‚СѓСЂРЅРёСЂ, РєРѕРјР°РЅРґС‹ Р·Р°РїРѕР»РЅРµРЅС‹, Рё РІС‹РїРѕР»РЅРµРЅ РІС…РѕРґ РІ Р°РґРјРёРЅРєСѓ.");
     }
   }
 
@@ -133,19 +133,19 @@ export function MatchesAdmin() {
         ),
         vip_correct_answer: resultForm.vip_correct_answer === "true",
       });
-      setMessage("Матч завершен, баллы начислены, публикация отправлена в VIP-группу при настроенном канале.");
+      setMessage("РњР°С‚С‡ Р·Р°РІРµСЂС€РµРЅ, Р±Р°Р»Р»С‹ РЅР°С‡РёСЃР»РµРЅС‹, РїСѓР±Р»РёРєР°С†РёСЏ РѕС‚РїСЂР°РІР»РµРЅР° РІ VIP-РіСЂСѓРїРїСѓ РїСЂРё РЅР°СЃС‚СЂРѕРµРЅРЅРѕРј РєР°РЅР°Р»Рµ.");
       await load();
       await loadQuestions(resultForm.match_id);
     } catch {
-      setMessage("Не удалось завершить матч. Возможно, он уже завершен или у вопросов не хватает ответов.");
+      setMessage("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РІРµСЂС€РёС‚СЊ РјР°С‚С‡. Р’РѕР·РјРѕР¶РЅРѕ, РѕРЅ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅ РёР»Рё Сѓ РІРѕРїСЂРѕСЃРѕРІ РЅРµ С…РІР°С‚Р°РµС‚ РѕС‚РІРµС‚РѕРІ.");
     }
   }
 
   return (
     <div className="grid gap-4 xl:grid-cols-[380px_420px_1fr]">
       <form onSubmit={createMatch} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">Создать матч</h2>
-        <AdminField label="Турнир">
+        <h2 className="text-base font-semibold">РЎРѕР·РґР°С‚СЊ РјР°С‚С‡</h2>
+        <AdminField label="РўСѓСЂРЅРёСЂ">
           <select className={inputClassName} value={form.tournament_id} onChange={(event) => setForm({ ...form, tournament_id: event.target.value })}>
             {tournaments.map((tournament) => (
               <option key={tournament.id} value={tournament.id}>
@@ -156,7 +156,7 @@ export function MatchesAdmin() {
         </AdminField>
 
         <TeamSelect
-          title="Команда 1"
+          title="РљРѕРјР°РЅРґР° 1"
           name={form.team_1}
           logo={form.team_1_logo}
           onPresetSelect={(team) => applyTeam(1, team)}
@@ -164,7 +164,7 @@ export function MatchesAdmin() {
           onLogoChange={(team_1_logo) => setForm({ ...form, team_1_logo })}
         />
         <TeamSelect
-          title="Команда 2"
+          title="РљРѕРјР°РЅРґР° 2"
           name={form.team_2}
           logo={form.team_2_logo}
           onPresetSelect={(team) => applyTeam(2, team)}
@@ -172,15 +172,15 @@ export function MatchesAdmin() {
           onLogoChange={(team_2_logo) => setForm({ ...form, team_2_logo })}
         />
 
-        <AdminField label="Время начала">
+        <AdminField label="Р’СЂРµРјСЏ РЅР°С‡Р°Р»Р°">
           <input type="datetime-local" className={inputClassName} value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} />
         </AdminField>
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать матч</button>
+        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">РЎРѕР·РґР°С‚СЊ РјР°С‚С‡</button>
       </form>
 
       <form onSubmit={completeMatch} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">Завершить матч и начислить баллы</h2>
-        <AdminField label="Матч">
+        <h2 className="text-base font-semibold">Р—Р°РІРµСЂС€РёС‚СЊ РјР°С‚С‡ Рё РЅР°С‡РёСЃР»РёС‚СЊ Р±Р°Р»Р»С‹</h2>
+        <AdminField label="РњР°С‚С‡">
           <select
             className={inputClassName}
             value={resultForm.match_id}
@@ -188,11 +188,7 @@ export function MatchesAdmin() {
           >
             {matches.map((match) => (
               <option key={match.id} value={match.id}>
-<<<<<<< HEAD
-                {formatQuestionReadiness(match)} · {match.team_1} - {match.team_2}
-=======
                 {formatAdminMatchOptionWithStatus(match)}
->>>>>>> ae60347 (Add production hosting and Telegram admin login)
               </option>
             ))}
           </select>
@@ -211,18 +207,18 @@ export function MatchesAdmin() {
             </div>
             {isSelectedResultCompleted && selectedResultMatch.team_1_score !== null && selectedResultMatch.team_2_score !== null ? (
               <div className="mt-1">
-                Итоговый счет: {selectedResultMatch.team_1_score}:{selectedResultMatch.team_2_score}. Повторное завершение заблокировано.
+                РС‚РѕРіРѕРІС‹Р№ СЃС‡РµС‚: {selectedResultMatch.team_1_score}:{selectedResultMatch.team_2_score}. РџРѕРІС‚РѕСЂРЅРѕРµ Р·Р°РІРµСЂС€РµРЅРёРµ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅРѕ.
               </div>
             ) : (
-              <div className="mt-1">Матч еще можно завершить после внесения итогового счета и правильных ответов.</div>
+              <div className="mt-1">РњР°С‚С‡ РµС‰Рµ РјРѕР¶РЅРѕ Р·Р°РІРµСЂС€РёС‚СЊ РїРѕСЃР»Рµ РІРЅРµСЃРµРЅРёСЏ РёС‚РѕРіРѕРІРѕРіРѕ СЃС‡РµС‚Р° Рё РїСЂР°РІРёР»СЊРЅС‹С… РѕС‚РІРµС‚РѕРІ.</div>
             )}
           </div>
         ) : null}
         <div className="grid grid-cols-2 gap-2">
-          <AdminField label="Счет 1">
+          <AdminField label="РЎС‡РµС‚ 1">
             <input type="number" min={0} className={inputClassName} value={resultForm.team_1_score} disabled={isSelectedResultCompleted} onChange={(event) => setResultForm({ ...resultForm, team_1_score: event.target.value })} />
           </AdminField>
-          <AdminField label="Счет 2">
+          <AdminField label="РЎС‡РµС‚ 2">
             <input type="number" min={0} className={inputClassName} value={resultForm.team_2_score} disabled={isSelectedResultCompleted} onChange={(event) => setResultForm({ ...resultForm, team_2_score: event.target.value })} />
           </AdminField>
         </div>
@@ -234,7 +230,7 @@ export function MatchesAdmin() {
         ).map((question) => (
           <QuestionAnswerField
             key={question.id}
-            label={`Правильный ответ публичного вопроса ${question.slot}`}
+            label={`РџСЂР°РІРёР»СЊРЅС‹Р№ РѕС‚РІРµС‚ РїСѓР±Р»РёС‡РЅРѕРіРѕ РІРѕРїСЂРѕСЃР° ${question.slot}`}
             questionText={question.text}
             value={resultForm.public_correct_answers[question.id] ?? "true"}
             disabled={isSelectedResultCompleted}
@@ -247,17 +243,17 @@ export function MatchesAdmin() {
           />
         ))}
         {selectedQuestions && selectedQuestions.public_questions.length === 0 && !selectedQuestions.public_question ? (
-          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">Публичные вопросы для выбранного матча не заданы.</div>
+          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">РџСѓР±Р»РёС‡РЅС‹Рµ РІРѕРїСЂРѕСЃС‹ РґР»СЏ РІС‹Р±СЂР°РЅРЅРѕРіРѕ РјР°С‚С‡Р° РЅРµ Р·Р°РґР°РЅС‹.</div>
         ) : null}
         <QuestionAnswerField
-          label="Правильный ответ VIP-вопроса"
+          label="РџСЂР°РІРёР»СЊРЅС‹Р№ РѕС‚РІРµС‚ VIP-РІРѕРїСЂРѕСЃР°"
           questionText={selectedQuestions?.vip_question?.text}
           value={resultForm.vip_correct_answer}
           disabled={isSelectedResultCompleted}
           onChange={(value) => setResultForm({ ...resultForm, vip_correct_answer: value })}
         />
         <button disabled={isSelectedResultCompleted} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-          {isSelectedResultCompleted ? "Матч уже завершен" : "Завершить и начислить"}
+          {isSelectedResultCompleted ? "РњР°С‚С‡ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅ" : "Р—Р°РІРµСЂС€РёС‚СЊ Рё РЅР°С‡РёСЃР»РёС‚СЊ"}
         </button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
       </form>
@@ -283,7 +279,7 @@ export function MatchesAdmin() {
                 <QuestionReadinessBadge match={match} />
               </div>
               {match.team_1_score !== null && match.team_2_score !== null ? (
-                <div className="mt-2 text-sm">Итоговый счет: {match.team_1_score}:{match.team_2_score}</div>
+                <div className="mt-2 text-sm">РС‚РѕРіРѕРІС‹Р№ СЃС‡РµС‚: {match.team_1_score}:{match.team_2_score}</div>
               ) : null}
             </div>
           );
@@ -314,7 +310,7 @@ function TeamSelect({
         <TeamLogo logo={logo} name={name || title} />
         <div className="text-sm font-medium">{title}</div>
       </div>
-      <AdminField label="Выбрать из ЧМ-2026">
+      <AdminField label="Р’С‹Р±СЂР°С‚СЊ РёР· Р§Рњ-2026">
         <select
           className={inputClassName}
           value={worldCupTeams.some((team) => team.name === name) ? name : ""}
@@ -325,18 +321,18 @@ function TeamSelect({
             }
           }}
         >
-          <option value="">Выберите команду</option>
+          <option value="">Р’С‹Р±РµСЂРёС‚Рµ РєРѕРјР°РЅРґСѓ</option>
           {worldCupTeams.map((team) => (
             <option key={`${team.confederation}-${team.name}`} value={team.name}>
-              {team.logo} {team.name} · {team.confederation}
+              {team.logo} {team.name} В· {team.confederation}
             </option>
           ))}
         </select>
       </AdminField>
-      <AdminField label="Название">
+      <AdminField label="РќР°Р·РІР°РЅРёРµ">
         <input className={inputClassName} value={name} onChange={(event) => onNameChange(event.target.value)} />
       </AdminField>
-      <AdminField label="Значок или URL логотипа">
+      <AdminField label="Р—РЅР°С‡РѕРє РёР»Рё URL Р»РѕРіРѕС‚РёРїР°">
         <input className={inputClassName} value={logo} onChange={(event) => onLogoChange(event.target.value)} />
       </AdminField>
     </section>
@@ -360,11 +356,11 @@ function QuestionAnswerField({
     <AdminField label={label}>
       <div className="flex flex-col gap-2">
         <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">
-          {questionText ?? "Вопрос для выбранного матча не задан."}
+          {questionText ?? "Р’РѕРїСЂРѕСЃ РґР»СЏ РІС‹Р±СЂР°РЅРЅРѕРіРѕ РјР°С‚С‡Р° РЅРµ Р·Р°РґР°РЅ."}
         </div>
         <select className={inputClassName} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
-          <option value="true">Да</option>
-          <option value="false">Нет</option>
+          <option value="true">Р”Р°</option>
+          <option value="false">РќРµС‚</option>
         </select>
       </div>
     </AdminField>
@@ -374,17 +370,14 @@ function QuestionAnswerField({
 function formatQuestionReadiness(match: Match): string {
   const publicCount = match.public_questions_count ?? 0;
   const vipReady = Boolean(match.vip_question_exists);
-  return publicCount >= 2 && vipReady ? "вопросы OK" : `вопросы ${publicCount}/2${vipReady ? " + VIP" : ""}`;
+  return publicCount >= 2 && vipReady ? "РІРѕРїСЂРѕСЃС‹ OK" : `РІРѕРїСЂРѕСЃС‹ ${publicCount}/2${vipReady ? " + VIP" : ""}`;
 }
 
-<<<<<<< HEAD
-=======
 function formatAdminMatchOptionWithStatus(match: Match): string {
   const status = getMatchStatusMeta(match);
   return `${status.label} · ${formatQuestionReadiness(match)} · ${match.team_1} - ${match.team_2}`;
 }
 
->>>>>>> ae60347 (Add production hosting and Telegram admin login)
 function QuestionReadinessBadge({ match }: { match: Match }) {
   const publicCount = match.public_questions_count ?? 0;
   const vipReady = Boolean(match.vip_question_exists);
@@ -398,7 +391,7 @@ function QuestionReadinessBadge({ match }: { match: Match }) {
           : "inline-flex rounded-md bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800"
       }
     >
-      {isComplete ? "Вопросы заполнены" : `Вопросы: ${publicCount}/2, VIP ${vipReady ? "есть" : "нет"}`}
+      {isComplete ? "Р’РѕРїСЂРѕСЃС‹ Р·Р°РїРѕР»РЅРµРЅС‹" : `Р’РѕРїСЂРѕСЃС‹: ${publicCount}/2, VIP ${vipReady ? "РµСЃС‚СЊ" : "РЅРµС‚"}`}
     </span>
   );
 }
