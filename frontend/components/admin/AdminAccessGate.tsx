@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { LocalAuthNotice } from "@/components/LocalAuthNotice";
 import { apiGet, hasAccessToken, type UserProfile } from "@/lib/api";
 
 type AdminAccessState =
@@ -31,7 +30,20 @@ export function AdminAccessGate({ children }: { children: React.ReactNode }) {
   }
 
   if (state.status === "missing_token") {
-    return <LocalAuthNotice />;
+    return (
+      <div className="rounded-lg bg-white p-4 text-sm shadow-sm">
+        <p className="font-medium">Нужен вход в админку</p>
+        <p className="mt-1 text-muted">В production входите через Telegram в браузере. Для локального теста можно использовать dev-login.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link className="rounded-md bg-ink px-4 py-2 font-medium text-white" href="/admin/login">
+            Войти через Telegram
+          </Link>
+          <Link className="rounded-md border border-black/10 bg-white px-4 py-2 font-medium" href="/dev-login">
+            Локальный вход
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (state.status === "forbidden") {

@@ -17,6 +17,16 @@ export type AuthResponse = {
   user: UserProfile;
 };
 
+export type TelegramBrowserAuthPayload = {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+};
+
 export type Question = {
   id: number;
   match_id: number;
@@ -205,6 +215,22 @@ export async function authenticateTelegram(initData: string): Promise<AuthRespon
 
   if (!response.ok) {
     throw new Error(`Telegram auth failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<AuthResponse>;
+}
+
+export async function authenticateTelegramBrowserAdmin(payload: TelegramBrowserAuthPayload): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/telegram-browser-admin`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Telegram browser admin auth failed: ${response.status}`);
   }
 
   return response.json() as Promise<AuthResponse>;

@@ -17,7 +17,7 @@ const nav = [
 export function AdminShell({ title, children }: { title: string; children: React.ReactNode }) {
   function logout() {
     sessionStorage.removeItem("access_token");
-    window.location.href = "/dev-login";
+    window.location.href = "/admin/login";
   }
 
   return (

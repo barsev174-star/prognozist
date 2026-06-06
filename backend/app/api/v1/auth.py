@@ -4,20 +4,22 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import create_access_token
-from app.core.telegram_auth import validate_telegram_init_data
+from app.core.telegram_auth import TelegramUserData, validate_telegram_init_data, validate_telegram_login_widget_data
 from app.db.session import get_db
 from app.models import User
-from app.schemas.auth import AuthResponse, BotUserUpsertRequest, DevAuthRequest, TelegramAuthRequest
+from app.schemas.auth import AuthResponse, BotUserUpsertRequest, DevAuthRequest, TelegramAuthRequest, TelegramBrowserAuthRequest
 from app.schemas.user import UserProfile
 from app.services.referrals import parse_referrer_telegram_id, register_referral
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/telegram", response_model=AuthResponse)
-def authenticate_telegram(payload: TelegramAuthRequest, db: Session = Depends(get_db)) -> AuthResponse:
-    telegram_user = validate_telegram_init_data(payload.init_data)
-
+def upsert_user_from_telegram(
+    telegram_user: TelegramUserData,
+    db: Session,
+    *,
+    allow_referrals: bool,
+) -> User:
     user = db.scalar(select(User).where(User.telegram_id == telegram_user.telegram_id))
     if user is None:
         user = User(
@@ -27,17 +29,38 @@ def authenticate_telegram(payload: TelegramAuthRequest, db: Session = Depends(ge
         )
         db.add(user)
         db.flush()
-        register_referral(db, parse_referrer_telegram_id(telegram_user.start_param), user)
+        if allow_referrals:
+            register_referral(db, parse_referrer_telegram_id(telegram_user.start_param), user)
         db.commit()
         db.refresh(user)
-    else:
-        if user.is_blocked:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is blocked")
-        user.username = telegram_user.username
-        user.first_name = telegram_user.first_name
-        db.commit()
-        db.refresh(user)
+        return user
 
+    if user.is_blocked:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is blocked")
+
+    user.username = telegram_user.username
+    user.first_name = telegram_user.first_name
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.post("/telegram", response_model=AuthResponse)
+def authenticate_telegram(payload: TelegramAuthRequest, db: Session = Depends(get_db)) -> AuthResponse:
+    telegram_user = validate_telegram_init_data(payload.init_data)
+    user = upsert_user_from_telegram(telegram_user, db, allow_referrals=True)
+
+    token = create_access_token(str(user.id))
+    return AuthResponse(access_token=token, user=user)
+
+
+@router.post("/telegram-browser-admin", response_model=AuthResponse)
+def authenticate_telegram_browser_admin(payload: TelegramBrowserAuthRequest, db: Session = Depends(get_db)) -> AuthResponse:
+    telegram_user = validate_telegram_login_widget_data(payload.model_dump())
+    if telegram_user.telegram_id not in settings.admin_ids:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    user = upsert_user_from_telegram(telegram_user, db, allow_referrals=False)
     token = create_access_token(str(user.id))
     return AuthResponse(access_token=token, user=user)
 

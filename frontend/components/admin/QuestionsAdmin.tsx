@@ -141,7 +141,11 @@ export function QuestionsAdmin() {
           <select className={inputClassName} value={matchId} onChange={(event) => setMatchId(event.target.value)}>
             {matches.map((match) => (
               <option key={match.id} value={match.id}>
+<<<<<<< HEAD
                 {match.team_1} - {match.team_2}
+=======
+                {formatAdminMatchOptionWithStatus(match)}
+>>>>>>> ae60347 (Add production hosting and Telegram admin login)
               </option>
             ))}
           </select>
@@ -175,6 +179,20 @@ export function QuestionsAdmin() {
   );
 }
 
+<<<<<<< HEAD
+=======
+function formatQuestionReadiness(match: Match): string {
+  const publicCount = match.public_questions_count ?? 0;
+  const vipReady = Boolean(match.vip_question_exists);
+  return publicCount >= 2 && vipReady ? "РІРѕРїСЂРѕСЃС‹ OK" : `РІРѕРїСЂРѕСЃС‹ ${publicCount}/2${vipReady ? " + VIP" : ""}`;
+}
+
+function formatAdminMatchOptionWithStatus(match: Match): string {
+  const status = getMatchStatusMeta(match);
+  return `${status.label} · ${formatQuestionReadiness(match)} · ${match.team_1} - ${match.team_2}`;
+}
+
+>>>>>>> ae60347 (Add production hosting and Telegram admin login)
 function QuestionCard({
   title,
   form,
