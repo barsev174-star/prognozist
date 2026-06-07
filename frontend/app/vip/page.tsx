@@ -18,15 +18,15 @@ export default function VipPage() {
               <div className="mt-3 flex flex-col gap-3 text-sm text-muted">
                 <p>Доступ к VIP-вопросу в каждом матче.</p>
                 <p>Дополнительные очки за правильные VIP-ответы.</p>
-                <p>При настроенном VIP-канале бот пришлет персональную ссылку после оплаты.</p>
+                <p>Если VIP-канал настроен, бот пришлет персональную ссылку сразу после оплаты.</p>
               </div>
             </section>
 
             <section className="rounded-lg bg-white p-4 shadow-sm">
               <h2 className="text-base font-semibold">Как подключить</h2>
               <p className="mt-2 text-sm text-muted">
-                Вернитесь в чат с ботом и нажмите кнопку <span className="font-medium text-ink">VIP</span>. Оплата
-                проходит через Telegram Stars.
+                Вернитесь в чат с ботом и нажмите кнопку <span className="font-medium text-ink">VIP</span>. Оплата проходит
+                через Telegram Stars.
               </p>
               <p className="mt-3 text-xs text-muted">
                 После оплаты обновите приложение или откройте его заново из Telegram, чтобы увидеть новый статус.

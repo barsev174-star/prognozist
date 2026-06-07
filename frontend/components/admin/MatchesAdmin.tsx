@@ -378,6 +378,11 @@ function formatAdminMatchOptionWithStatus(match: Match): string {
   return `${status.label} · ${formatQuestionReadiness(match)} · ${match.team_1} - ${match.team_2}`;
 }
 
+function formatAdminMatchOptionWithStatus(match: Match): string {
+  const status = getMatchStatusMeta(match);
+  return `${status.label} · ${formatQuestionReadiness(match)} · ${match.team_1} - ${match.team_2}`;
+}
+
 function QuestionReadinessBadge({ match }: { match: Match }) {
   const publicCount = match.public_questions_count ?? 0;
   const vipReady = Boolean(match.vip_question_exists);

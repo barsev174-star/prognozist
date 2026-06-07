@@ -1,5 +1,6 @@
 from app.models.achievement import Achievement, UserAchievement
 from app.models.answer import QuestionAnswer, VipQuestionAnswer
+from app.models.donation import Donation
 from app.models.expert import ExpertPrediction
 from app.models.league import League, LeagueMember, LeagueStatus
 from app.models.log import PointsLog, SystemLog
@@ -15,6 +16,7 @@ from app.models.vip import VipSubscription, VipSubscriptionStatus
 
 __all__ = [
     "Achievement",
+    "Donation",
     "ExpertPrediction",
     "League",
     "LeagueMember",
