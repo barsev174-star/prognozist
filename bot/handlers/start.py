@@ -4,7 +4,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
 
 from config import settings
-from keyboards.main_menu import main_menu_keyboard
+from keyboards.main_menu import OPEN_APP_LABEL, main_menu_keyboard
 from services.api_client import upsert_bot_user
 
 router = Router()
@@ -19,16 +19,16 @@ async def handle_start(message: Message) -> None:
         first_name=message.from_user.first_name,
     )
     await message.answer(
-        "Выберите раздел:",
+        "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0440\u0430\u0437\u0434\u0435\u043b:",
         reply_markup=main_menu_keyboard(),
     )
     await message.answer(
-        "Открыть Mini App:",
+        "\u041e\u0442\u043a\u0440\u044b\u0442\u044c Mini App:",
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="Открыть приложение",
+                        text=OPEN_APP_LABEL,
                         web_app=WebAppInfo(url=settings.telegram_webapp_url),
                     )
                 ]
