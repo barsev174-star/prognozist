@@ -5,6 +5,37 @@ import { useEffect, useState } from "react";
 import { LocalAuthNotice } from "@/components/LocalAuthNotice";
 import { apiGet, apiPatch, apiPost, hasAccessToken, type League } from "@/lib/api";
 
+const loadError = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043b\u0438\u0433\u0438.";
+const createSuccess = "\u041b\u0438\u0433\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430.";
+const createError =
+  "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043b\u0438\u0433\u0443. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 ID \u0442\u0443\u0440\u043d\u0438\u0440\u0430 \u0438 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435.";
+const joinSuccess = "\u0412\u044b \u0432\u0441\u0442\u0443\u043f\u0438\u043b\u0438 \u0432 \u043b\u0438\u0433\u0443.";
+const joinError = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0432\u0441\u0442\u0443\u043f\u0438\u0442\u044c \u0432 \u043b\u0438\u0433\u0443. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u043a\u043e\u0434 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f.";
+const prizeUpdated = "\u041f\u0440\u0438\u0437 \u043b\u0438\u0433\u0438 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d.";
+const prizeError =
+  "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043f\u0440\u0438\u0437. \u041c\u0435\u043d\u044f\u0442\u044c \u0435\u0433\u043e \u043c\u043e\u0436\u0435\u0442 \u0442\u043e\u043b\u044c\u043a\u043e \u0432\u043b\u0430\u0434\u0435\u043b\u0435\u0446 \u0430\u043a\u0442\u0438\u0432\u043d\u043e\u0439 \u043b\u0438\u0433\u0438.";
+const loadingLabel = "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...";
+const heroEyebrow = "\u041a\u043b\u0443\u0431\u044b \u0438\u0433\u0440\u043e\u043a\u043e\u0432";
+const heroTitle = "\u0421\u043e\u0431\u0438\u0440\u0430\u0439\u0442\u0435 \u0441\u0432\u043e\u044e \u043b\u0438\u0433\u0443";
+const heroBody = "\u041b\u0438\u0447\u043d\u044b\u0435 \u043b\u0438\u0433\u0438 \u043f\u043e\u043c\u043e\u0433\u0430\u044e\u0442 \u0438\u0433\u0440\u0430\u0442\u044c \u0432 \u0441\u0432\u043e\u0435\u043c \u043a\u0440\u0443\u0433\u0443, \u0441\u0440\u0430\u0432\u043d\u0438\u0432\u0430\u0442\u044c \u043e\u0447\u043a\u0438 \u0438 \u0434\u043e\u0431\u0430\u0432\u043b\u044f\u0442\u044c \u0441\u0432\u043e\u0438 \u043f\u0440\u0438\u0437\u044b.";
+const createTitle = "\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043b\u0438\u0433\u0443";
+const tournamentIdPlaceholder = "ID \u0442\u0443\u0440\u043d\u0438\u0440\u0430";
+const leagueNamePlaceholder = "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043b\u0438\u0433\u0438";
+const descriptionPlaceholder = "\u041e\u043f\u0438\u0441\u0430\u043d\u0438\u0435";
+const prizePlaceholder = "\u041f\u0440\u0438\u0437 \u043b\u0438\u0433\u0438";
+const createButton = "\u0421\u043e\u0437\u0434\u0430\u0442\u044c";
+const joinTitle = "\u0412\u0441\u0442\u0443\u043f\u0438\u0442\u044c \u043f\u043e \u043a\u043e\u0434\u0443";
+const invitePlaceholder = "\u041a\u043e\u0434 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f";
+const joinButton = "\u0412\u0441\u0442\u0443\u043f\u0438\u0442\u044c";
+const yourLeaguesTitle = "\u0412\u0430\u0448\u0438 \u043b\u0438\u0433\u0438";
+const noLeaguesLabel = "\u041b\u0438\u0433 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442.";
+const tournamentPrefix = "\u0422\u0443\u0440\u043d\u0438\u0440 #";
+const membersLabel = "\u0438\u0433\u0440\u043e\u043a\u043e\u0432:";
+const codeLabel = "\u043a\u043e\u0434:";
+const prizeLabel = "\u041f\u0440\u0438\u0437:";
+const prizeMissing = "\u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d";
+const updatePrizeButton = "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043f\u0440\u0438\u0437";
+
 export function LeaguesManager() {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [hasToken, setHasToken] = useState(false);
@@ -34,7 +65,7 @@ export function LeaguesManager() {
     }
 
     load()
-      .catch(() => setMessage("Не удалось загрузить лиги."))
+      .catch(() => setMessage(loadError))
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -49,10 +80,10 @@ export function LeaguesManager() {
         prize_description: createForm.prize_description || null,
       });
       setCreateForm({ tournament_id: createForm.tournament_id, name: "", description: "", prize_description: "" });
-      setMessage("Лига создана.");
+      setMessage(createSuccess);
       await load();
     } catch {
-      setMessage("Не удалось создать лигу. Проверьте ID турнира и название.");
+      setMessage(createError);
     }
   }
 
@@ -62,10 +93,10 @@ export function LeaguesManager() {
     try {
       await apiPost<League>("/leagues/join", { invite_code: inviteCode.trim() });
       setInviteCode("");
-      setMessage("Вы вступили в лигу.");
+      setMessage(joinSuccess);
       await load();
     } catch {
-      setMessage("Не удалось вступить в лигу. Проверьте код приглашения.");
+      setMessage(joinError);
     }
   }
 
@@ -75,10 +106,10 @@ export function LeaguesManager() {
       await apiPatch<League>(`/leagues/${league.id}`, {
         prize_description: editingPrize[league.id] || null,
       });
-      setMessage("Приз лиги обновлён.");
+      setMessage(prizeUpdated);
       await load();
     } catch {
-      setMessage("Не удалось обновить приз. Менять приз может только владелец активной лиги.");
+      setMessage(prizeError);
     }
   }
 
@@ -87,84 +118,91 @@ export function LeaguesManager() {
   }
 
   if (isLoading) {
-    return <div className="rounded-lg bg-white p-4 text-sm text-muted shadow-sm">Загрузка...</div>;
+    return <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{loadingLabel}</div>;
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <form onSubmit={createLeague} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">Создать лигу</h2>
+      <section className="rounded-[26px] border border-black/5 bg-[linear-gradient(135deg,rgba(23,32,51,0.12),rgba(15,118,110,0.12))] p-5 shadow-[0_10px_30px_rgba(23,32,51,0.08)]">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">{heroEyebrow}</div>
+        <h2 className="mt-2 text-xl font-semibold">{heroTitle}</h2>
+        <p className="mt-2 text-sm text-muted">{heroBody}</p>
+      </section>
+
+      <form onSubmit={createLeague} className="flex flex-col gap-3 rounded-[24px] border border-black/5 bg-white/92 p-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)]">
+        <h2 className="text-sm font-semibold">{createTitle}</h2>
         <input
-          className="rounded-md border border-black/10 px-3 py-2 text-sm"
+          className="rounded-2xl border border-black/10 px-3 py-2 text-sm"
           inputMode="numeric"
-          placeholder="ID турнира"
+          placeholder={tournamentIdPlaceholder}
           value={createForm.tournament_id}
           onChange={(event) => setCreateForm({ ...createForm, tournament_id: event.target.value })}
         />
         <input
-          className="rounded-md border border-black/10 px-3 py-2 text-sm"
-          placeholder="Название лиги"
+          className="rounded-2xl border border-black/10 px-3 py-2 text-sm"
+          placeholder={leagueNamePlaceholder}
           value={createForm.name}
           onChange={(event) => setCreateForm({ ...createForm, name: event.target.value })}
         />
         <input
-          className="rounded-md border border-black/10 px-3 py-2 text-sm"
-          placeholder="Описание"
+          className="rounded-2xl border border-black/10 px-3 py-2 text-sm"
+          placeholder={descriptionPlaceholder}
           value={createForm.description}
           onChange={(event) => setCreateForm({ ...createForm, description: event.target.value })}
         />
         <textarea
-          className="min-h-20 rounded-md border border-black/10 px-3 py-2 text-sm"
-          placeholder="Приз лиги"
+          className="min-h-20 rounded-2xl border border-black/10 px-3 py-2 text-sm"
+          placeholder={prizePlaceholder}
           value={createForm.prize_description}
           onChange={(event) => setCreateForm({ ...createForm, prize_description: event.target.value })}
         />
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать</button>
+        <button className="rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white">{createButton}</button>
       </form>
 
-      <form onSubmit={joinLeague} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold">Вступить по коду</h2>
+      <form onSubmit={joinLeague} className="flex flex-col gap-3 rounded-[24px] border border-black/5 bg-white/92 p-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)]">
+        <h2 className="text-sm font-semibold">{joinTitle}</h2>
         <input
-          className="rounded-md border border-black/10 px-3 py-2 text-sm"
-          placeholder="Код приглашения"
+          className="rounded-2xl border border-black/10 px-3 py-2 text-sm"
+          placeholder={invitePlaceholder}
           value={inviteCode}
           onChange={(event) => setInviteCode(event.target.value)}
         />
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Вступить</button>
+        <button className="rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white">{joinButton}</button>
       </form>
 
-      {message ? <div className="rounded-lg bg-white p-4 text-sm text-muted shadow-sm">{message}</div> : null}
+      {message ? <div className="rounded-[24px] border border-black/5 bg-white/92 p-4 text-sm text-muted shadow-[0_10px_30px_rgba(23,32,51,0.08)]">{message}</div> : null}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Ваши лиги</h2>
+        <h2 className="text-sm font-semibold">{yourLeaguesTitle}</h2>
         {leagues.length === 0 ? (
-          <div className="rounded-lg bg-white p-4 text-sm text-muted shadow-sm">Лиг пока нет.</div>
+          <div className="rounded-[24px] border border-black/5 bg-white/92 p-4 text-sm text-muted shadow-[0_10px_30px_rgba(23,32,51,0.08)]">{noLeaguesLabel}</div>
         ) : (
           leagues.map((league) => (
-            <article key={league.id} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
+            <article key={league.id} className="flex flex-col gap-3 rounded-[24px] border border-black/5 bg-white/92 p-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)]">
               <div>
                 <div className="text-sm font-semibold">{league.name}</div>
                 <div className="mt-1 text-xs text-muted">
-                  Турнир #{league.tournament_id} · игроков: {league.members_count} · код: {league.invite_code}
+                  {tournamentPrefix}
+                  {league.tournament_id} {" \u00b7 "} {membersLabel} {league.members_count} {" \u00b7 "} {codeLabel} {league.invite_code}
                 </div>
               </div>
               {league.description ? <p className="text-sm text-muted">{league.description}</p> : null}
-              <div className="rounded-md bg-surface px-3 py-2 text-sm">
-                Приз: {league.prize_description || "не указан"}
+              <div className="rounded-2xl bg-surface px-3 py-2 text-sm">
+                {prizeLabel} {league.prize_description || prizeMissing}
               </div>
               {league.is_owner ? (
                 <div className="flex flex-col gap-2">
                   <textarea
-                    className="min-h-20 rounded-md border border-black/10 px-3 py-2 text-sm"
+                    className="min-h-20 rounded-2xl border border-black/10 px-3 py-2 text-sm"
                     value={editingPrize[league.id] ?? ""}
                     onChange={(event) => setEditingPrize({ ...editingPrize, [league.id]: event.target.value })}
                   />
                   <button
                     type="button"
-                    className="rounded-md border border-black/10 px-4 py-2 text-sm font-medium"
+                    className="rounded-full border border-black/10 px-4 py-2.5 text-sm font-medium"
                     onClick={() => updatePrize(league)}
                   >
-                    Обновить приз
+                    {updatePrizeButton}
                   </button>
                 </div>
               ) : null}

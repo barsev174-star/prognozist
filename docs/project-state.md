@@ -1,225 +1,299 @@
 # Project State
 
-Last updated: 2026-06-06.
+Last updated: 2026-06-08.
 
 Repository: `barsev174-star/prognozist`.
 
-Current local path on this PC:
+Primary local workspace on this PC:
 
 ```text
 C:\Users\zapra\OneDrive\Документы\Prognozist 1.0
 ```
 
-## Purpose
+## Product
 
-Telegram bot and Telegram Mini App for football match predictions.
+Prognozist is a Telegram bot plus Telegram Mini App for football predictions.
 
-Players should be able to:
+Core player flow:
 
 - open the Mini App from Telegram;
-- view current and future matches;
-- make predictions before a match starts;
-- answer two public yes/no questions;
-- see the VIP question text, but answer it only with active VIP access;
-- see points earned for a completed match;
-- view rankings, leagues, referrals, profile, and VIP status.
+- browse upcoming and completed matches;
+- submit a score prediction before kickoff;
+- answer public yes/no questions;
+- see the VIP question, and answer it only with active VIP access;
+- review points and ranking progress;
+- use leagues, profile, referrals, and VIP screens.
 
-Admin should be able to:
+Core admin flow:
 
-- create seasons, tournaments, matches, and match questions;
-- set two public questions and one VIP question per match;
-- enter match results and correct answers;
-- manage users, test VIP access, and review logs;
-- trigger scoring and VIP group result publication.
+- create seasons, tournaments, matches, and questions;
+- manage two public questions plus one VIP question per match;
+- enter final scores and correct answers;
+- manage users and VIP access;
+- review logs;
+- manage expert predictions and VIP publication flow.
 
-## Current Working State
+## Current Production State
 
-As of 2026-06-06, the local Docker stack works and the Telegram Mini App works through ngrok.
-
-Known-good tunnel URL during the latest session:
-
-```text
-https://secret-asleep-filing.ngrok-free.dev
-```
-
-Important: ngrok URLs are temporary unless a reserved domain is configured. If ngrok is restarted and gives a new URL, update `.env` and recreate `backend` and `bot`.
-
-The previous Cloudflare quick tunnel scheme was unstable on this network. It failed with Cloudflare edge TLS/QUIC/HTTP2 errors. Localtunnel also worked intermittently, but ngrok is the current working scheme.
-
-## Important Local Env Values
-
-Keep this shape in `.env` for local/ngrok testing:
-
-```env
-ENVIRONMENT=local
-TELEGRAM_WEBAPP_URL=https://your-ngrok-url.ngrok-free.dev
-NEXT_PUBLIC_API_BASE_URL=/api/v1
-BACKEND_CORS_ORIGINS=http://localhost:3000,https://your-ngrok-url.ngrok-free.dev
-BACKEND_URL=http://backend:8000
-TELEGRAM_ADMIN_IDS=1321200291
-```
-
-Do not print or commit `BOT_TOKEN`.
-
-Frontend proxies `/api/v1/*` to backend through `frontend/next.config.ts`, so only frontend port `3000` needs a public ngrok URL.
-
-## Start Locally
-
-1. Start Docker Desktop.
-
-2. Open PowerShell in the project directory:
-
-```powershell
-cd "C:\Users\zapra\OneDrive\Документы\Prognozist 1.0"
-```
-
-3. Start the app stack:
-
-```powershell
-docker compose up -d
-docker compose exec backend alembic upgrade head
-```
-
-4. In a second PowerShell window, start ngrok and keep that window open:
-
-```powershell
-ngrok http 3000
-```
-
-5. Copy the HTTPS ngrok URL into `.env`:
-
-```env
-TELEGRAM_WEBAPP_URL=https://your-ngrok-url.ngrok-free.dev
-BACKEND_CORS_ORIGINS=http://localhost:3000,https://your-ngrok-url.ngrok-free.dev
-```
-
-6. Recreate services that read those env values:
-
-```powershell
-docker compose up -d --force-recreate backend bot
-```
-
-7. In Telegram, send `/start` to the bot again and use the fresh "Open app" button. Old bot buttons can still point to an old tunnel URL.
-
-## Useful Checks
-
-```powershell
-docker compose ps
-docker compose logs -f bot
-docker compose logs -f frontend
-docker compose logs -f backend
-```
-
-Local checks:
-
-```powershell
-curl http://localhost:8000/health
-curl http://localhost:3000/api/v1/health
-```
-
-Ngrok checks:
-
-```powershell
-curl https://your-ngrok-url.ngrok-free.dev/api/v1/health
-```
-
-Ngrok local inspector:
+Production is live on:
 
 ```text
-http://127.0.0.1:4040
-http://127.0.0.1:4040/api/tunnels
+https://prognozistapp.ru
 ```
 
-Local URLs:
+Known-good production facts:
 
-- `http://localhost:3000/dev-login`
-- `http://localhost:3000/`
-- `http://localhost:3000/admin`
-- `http://localhost:8000/health`
+- frontend responds with `HTTP/2 200`;
+- backend health works at `https://prognozistapp.ru/api/v1/health`;
+- Caddy HTTPS works;
+- Telegram bot polling works;
+- Telegram Mini App opens from the bot;
+- admin login works at `https://prognozistapp.ru/admin/login`;
+- Alembic migrations are applied through `0006`.
 
-## Stop Locally
+Important production env/settings:
 
-```powershell
-docker compose down
+- `APP_DOMAIN=prognozistapp.ru`
+- `TELEGRAM_WEBAPP_URL=https://prognozistapp.ru`
+- `BACKEND_CORS_ORIGINS=https://prognozistapp.ru`
+- `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=prognozistapp_bot`
+- `TELEGRAM_ADMIN_IDS=1321200291`
+- BotFather `/setdomain` is set to `prognozistapp.ru`
+
+Important production networking note:
+
+- In `docker-compose.prod.yml`, the bot needs:
+
+```yaml
+extra_hosts:
+  - "api.telegram.org:149.154.167.220"
 ```
 
-Stop ngrok with `Ctrl+C` in the ngrok terminal window.
+This is required because the VPS/container path preferred IPv6 and Telegram API calls timed out.
 
-## Local Test Login
+## Git And Handoff Workflow
 
-Use:
+This project has two local Git realities:
+
+1. Main working folder:
 
 ```text
-http://localhost:3000/dev-login
+C:\Users\zapra\OneDrive\Документы\Prognozist 1.0
 ```
 
-Expected local test flow:
+2. Service clone used for reliable commits/pushes:
 
-- Generate a random player to test normal app behavior.
-- Enter as a player to test predictions, questions, rankings, leagues, profile, and VIP screens.
-- Use Telegram ID `1321200291` for admin access.
-- Admin pages include navigation back to the app/testing flow.
-
-If dev login fails with "backend is not running / ENVIRONMENT=local / Telegram ID in TELEGRAM_ADMIN_IDS", first check migrations:
-
-```powershell
-docker compose exec backend alembic upgrade head
+```text
+C:\Users\zapra\OneDrive\Документы\Prognozist 1.0\.codex-push-check
 ```
 
-The earlier observed cause was an empty database with missing `users` table.
+Why this matters:
 
-## Implemented Recently
+- the main workspace `.git` may fail to create `index.lock`;
+- because of that, normal `git add` / `git commit` in the root folder is not always reliable;
+- the safe default for commits is the service clone.
 
-- Two public questions plus one VIP question per match.
-- Admin can see and save all three question fields on the questions page.
-- Match completion shows question texts next to correct-answer selectors.
-- VIP question is visible to all players, but answer is locked unless VIP.
-- Local dev login supports normal player testing and admin testing separately.
-- Random local players get random names instead of all being `Dev Admin`.
-- Admin match creation has a prepared World Cup 2026 team list with flag icons saved into existing team logo fields.
-- Normal players get a clear no-admin-access screen if they open admin pages.
-- Admin users page can list players, block/unblock users, edit VIP expiration, and grant test VIP access.
-- Admin logs page shows system events and point-award records.
-- Completed/started matches are closed for new predictions.
-- Completed match card can show points breakdown.
-- League owner prize editing was added.
-- Frontend `/api/v1` rewrite supports one-public-URL setup.
-- Admin navigation has one Users entry in the sections row; the duplicate dark quick button was removed.
-- Home screen now shows the player's VIP status directly.
-- The duplicate VIP navigation tile was removed from the home sections grid; VIP is entered through the status card.
-- `/vip` is no longer a placeholder. It shows current VIP state, benefits, and how to activate VIP through the bot.
-- Bot now softly deletes the player's `/start` command message; important bot replies and payment/result confirmations are kept.
-- Player match list now shows whether the player has already submitted a score prediction, public-question answers, and VIP answer for each match.
-- Admin match list now shows question readiness before selecting a match: two public questions and VIP question.
-- `/admin/expert` now has a usable admin flow: select match, create/update expert score prediction, set public/VIP question answers, see publication status, and publish to the VIP channel.
-- Expert predictions now support answers for both public questions plus the VIP question.
+Recommended Git workflow for future sessions:
 
-## Current Assessment
-
-Local MVP readiness: about 84%.
-
-Real public launch readiness: about 60%.
-
-The core prediction flow works locally and the Telegram Mini App works through ngrok. The remaining work is mostly production hosting, payments/VIP polish, broader bot-message policy, and broader manual testing with several player scenarios.
-
-## Remaining Product TODOs
-
-- Replace flag icons with official federation crests if real licensed team logos are needed.
-- Expand Telegram bot message cleanup policy beyond `/start` only if testing proves it is not confusing.
-- Add stable production hosting/public URL instead of temporary ngrok.
-- Continue manual testing with several random players: predictions, question answers, VIP/non-VIP behavior, match completion, points, rankings, leagues.
-- Continue production readiness work: stable hosting, secrets, backups, monitoring, real domain, and deploy instructions.
-- Prepare final release/support instructions.
-
-## Notes For Another Chat
-
-Before changing anything, run:
+1. Do all code edits in the main workspace.
+2. Before commit, run:
 
 ```powershell
 git status --short --branch
 docker compose ps
 ```
 
-This Codex environment may not be able to write to the main `.git` directory. A service clone may exist at `.codex-push-check/` for GitHub syncing/pushing.
+3. Try normal Git in the main workspace once.
+4. If you get `index.lock permission denied`, switch immediately to the service clone.
+5. Copy changed files from the main workspace into `.codex-push-check`.
+6. Commit and push from `.codex-push-check`.
+7. Prefer a dedicated branch for each batch: `codex/...`
+8. Merge through GitHub PR into `main`.
+9. On VPS, always deploy from `main` unless there is a specific reason to test a branch first.
 
-Do not revert user changes. If services are already running, keep the existing Docker/ngrok scheme unless the user asks to change it.
+Known recent service-clone history before this design batch:
+
+- `846d51f Add production deployment setup`
+- `f7c4d9f Clean up match page text and handoff notes`
+- `c03b810 Add Telegram Stars donations and clean VIP/admin text`
+- `e306c42 Fix duplicate admin match formatter`
+
+## Implemented Recently
+
+### Payments And Donations
+
+- Telegram Stars VIP flow exists and works in production testing.
+- Donation flow through Telegram Stars was added.
+- Donation backend pieces exist:
+  - payment confirmation endpoint
+  - donation model/schema/service
+  - migration `0006`
+- Bot supports:
+  - donation button
+  - fixed Stars amounts
+  - custom amount flow
+  - thank-you message after donation payment
+
+### Admin And Backend
+
+- admin logs page supports donation-related events;
+- backend tests were added for donation and VIP payment scenarios;
+- backup/restore/health/retention scripts were added for production operations;
+- production operations docs were added.
+
+### Frontend And UX
+
+- player-facing match section was cleaned from mojibake;
+- VIP page, rankings, and home structure were improved;
+- release polish pass started for key player-facing screens:
+  - home
+  - matches list
+  - match prediction screen
+  - rankings
+  - VIP
+  - profile
+  - referrals
+  - leagues shell
+- global visual layer was strengthened:
+  - more expressive surfaces
+  - better hero blocks
+  - stronger information hierarchy
+  - more intentional "sports app" atmosphere
+
+### Important Frontend Bug Found During Polish
+
+During the release polish pass, some strings were switched to Unicode escapes to avoid file-encoding corruption.
+
+Important caveat:
+
+- Unicode escapes are safe inside JavaScript string constants and JSX expressions;
+- they are not safe when passed as raw JSX string attributes like:
+
+```tsx
+<AppHeader title="\u041c..." />
+```
+
+That renders literal `\u041c...` text in the browser.
+
+This was identified on 2026-06-08 from a screenshot and must be treated as a specific JSX rendering bug, not a general Russian-text bug.
+
+## Current Assessment
+
+Estimated readiness:
+
+- MVP: about `86%`
+- public launch readiness: about `78-82%`
+
+Why it is not higher yet:
+
+- payment flow still needs final donation end-to-end validation;
+- leagues still rely on manual `tournament_id` entry;
+- there is still remaining mojibake in some non-player/admin/bot areas;
+- monitoring is still lightweight;
+- broader real-user manual testing is still needed.
+
+## Highest-Priority Open Work
+
+### 1. Release Visual Polish Completion
+
+Continue the current polish pass and verify it in the Mini App on real devices.
+
+Focus:
+
+- confirm no literal `\u...` text remains;
+- keep the new visual direction consistent across player-facing screens;
+- avoid redesigning flows while polishing.
+
+### 2. Leagues UX
+
+Current issue:
+
+- league creation still asks the player/admin to manually enter `tournament_id`.
+
+Next improvement:
+
+- add tournament list endpoint or reuse existing data source;
+- replace free-text tournament id with a proper select;
+- show tournament names instead of raw ids.
+
+### 3. Teams / World Cup 2026 Data
+
+Need to move toward a proper team reference model instead of relying on string-only team fields and static frontend lists.
+
+Desired next step:
+
+- add/seed a `teams` source of truth for World Cup 2026 participants;
+- prepare safe logo assets strategy;
+- connect admin match creation to structured team data.
+
+### 4. Payments Finalization
+
+VIP is in good shape.
+
+Still needed:
+
+- donation end-to-end test in production;
+- confirm logging/idempotency behavior after real donation;
+- decide whether donation analytics should remain logs-only or get a fuller admin view later.
+
+### 5. Operations
+
+Current baseline exists:
+
+- backup script
+- restore script
+- nightly backup wrapper
+- retention cleanup
+- production smoke check
+
+Still needed:
+
+- cron setup on VPS if not already finalized;
+- off-server backup copy;
+- external uptime monitoring / alerting.
+
+## VPS Deploy Pattern
+
+After a branch is merged into `main`, the safe production deploy flow is:
+
+```bash
+cd ~/prognozist
+git checkout main
+git pull origin main
+docker compose -f docker-compose.prod.yml --env-file .env.production exec backend alembic upgrade head
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build backend bot frontend
+docker compose -f docker-compose.prod.yml --env-file .env.production ps
+```
+
+Then run:
+
+```bash
+bash infra/scripts/check-production-health.sh
+```
+
+## Notes For Another Chat
+
+If another Codex chat starts without this context, it should be told all of the following:
+
+- project: Telegram bot + Telegram Mini App for football predictions;
+- repo: `barsev174-star/prognozist`;
+- local path: `C:\Users\zapra\OneDrive\Документы\Prognozist 1.0`;
+- production domain: `https://prognozistapp.ru`;
+- backend health: `https://prognozistapp.ru/api/v1/health`;
+- bot polling, Mini App, HTTPS, and admin login are working;
+- migrations are applied through `0006`;
+- donations via Telegram Stars were added;
+- operational scripts/docs were added;
+- release design polish is in progress;
+- main workspace Git may fail on `index.lock permission denied`;
+- commits/pushes should usually be done through `.codex-push-check`;
+- before any work, run:
+
+```powershell
+git status --short --branch
+docker compose ps
+```
+
+- do not touch secrets or commit `.env`;
+- do not revert unrelated local changes;
+- if committing, prefer a fresh `codex/...` branch in `.codex-push-check`.
