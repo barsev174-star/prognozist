@@ -192,9 +192,9 @@ export function LeaguesManager() {
         await navigator.clipboard.writeText(text);
         setMessage(shareCopiedFallback);
         return;
-      } else {
-        window.open(shareUrl, "_blank", "noopener,noreferrer");
       }
+
+      window.open(shareUrl, "_blank", "noopener,noreferrer");
       setMessage(shareFallback);
     } catch {
       setMessage(shareError);

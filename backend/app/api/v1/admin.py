@@ -8,18 +8,43 @@ from sqlalchemy.orm import Session
 
 from app.core.permissions import get_current_admin
 from app.db.session import get_db
-from app.models import ExpertPrediction, League, Match, MatchStatus, PointsLog, Question, Season, SystemLog, Tournament, User, VipQuestion
+from app.models import (
+    ExpertPrediction,
+    League,
+    Match,
+    MatchStatus,
+    PointsLog,
+    Question,
+    Season,
+    SystemLog,
+    Team,
+    Tournament,
+    TournamentPredictionOption,
+    TournamentPredictionQuestion,
+    User,
+    VipQuestion,
+)
 from app.schemas.expert import ExpertPredictionCreate, ExpertPredictionRead, ExpertPredictionUpdate
 from app.schemas.log import AdminPointsLogRead, AdminSystemLogRead
 from app.schemas.match import MatchCreate, MatchQuestionsRead, MatchRead, MatchResultUpdate, MatchUpdate
 from app.schemas.question import QuestionCreate, QuestionRead, QuestionUpdate
 from app.schemas.season import SeasonCreate, SeasonRead, SeasonUpdate
+from app.schemas.team import TeamCreate, TeamRead
 from app.schemas.tournament import (
     TournamentCompletionReadinessRead,
     TournamentCompletionResultRead,
     TournamentCreate,
     TournamentRead,
     TournamentUpdate,
+)
+from app.schemas.tournament_prediction import (
+    TournamentPredictionOptionCreate,
+    TournamentPredictionOptionRead,
+    TournamentPredictionResolve,
+    TournamentPredictionOptionUpdate,
+    TournamentPredictionQuestionCreate,
+    TournamentPredictionQuestionRead,
+    TournamentPredictionQuestionUpdate,
 )
 from app.schemas.user import UserAdminUpdate, UserGrantVipRequest, UserProfile
 from app.services.autoposting import (
@@ -31,6 +56,10 @@ from app.services.autoposting import (
 )
 from app.services.scoring import score_completed_match
 from app.services.tournaments import complete_tournament, get_completion_readiness
+from app.services.tournament_predictions import (
+    build_tournament_prediction_resolution_summary,
+    resolve_tournament_prediction_question,
+)
 from app.services.vip import activate_vip_subscription
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(get_current_admin)])
@@ -225,6 +254,185 @@ def update_tournament(tournament_id: int, payload: TournamentUpdate, db: Session
     return tournament
 
 
+@router.get("/teams", response_model=list[TeamRead])
+def list_teams(db: Session = Depends(get_db)) -> list[Team]:
+    return list(db.scalars(select(Team).order_by(Team.name.asc(), Team.id.asc())))
+
+
+@router.post("/teams", response_model=TeamRead, status_code=status.HTTP_201_CREATED)
+def create_team(payload: TeamCreate, db: Session = Depends(get_db)) -> Team:
+    team = Team(**payload.model_dump())
+    db.add(team)
+    db.commit()
+    db.refresh(team)
+    return team
+
+
+@router.get("/tournaments/{tournament_id}/prediction-questions", response_model=list[TournamentPredictionQuestionRead])
+def list_admin_tournament_prediction_questions(
+    tournament_id: int,
+    db: Session = Depends(get_db),
+) -> list[TournamentPredictionQuestion]:
+    if db.get(Tournament, tournament_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found")
+
+    questions = list(
+        db.scalars(
+            select(TournamentPredictionQuestion)
+            .options(
+                sa.orm.selectinload(TournamentPredictionQuestion.options).selectinload(TournamentPredictionOption.team),
+                sa.orm.selectinload(TournamentPredictionQuestion.result),
+            )
+            .where(TournamentPredictionQuestion.tournament_id == tournament_id)
+            .order_by(TournamentPredictionQuestion.lock_at.asc(), TournamentPredictionQuestion.id.asc())
+        )
+    )
+    for question in questions:
+        if question.status == TournamentPredictionQuestionStatus.resolved or question.result is not None:
+            setattr(question, "resolution_summary", build_tournament_prediction_resolution_summary(db, question.id))
+    return questions
+
+
+@router.post(
+    "/tournaments/{tournament_id}/prediction-questions",
+    response_model=TournamentPredictionQuestionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_tournament_prediction_question(
+    tournament_id: int,
+    payload: TournamentPredictionQuestionCreate,
+    db: Session = Depends(get_db),
+) -> TournamentPredictionQuestion:
+    if db.get(Tournament, tournament_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found")
+
+    question = TournamentPredictionQuestion(tournament_id=tournament_id, **payload.model_dump())
+    db.add(question)
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+@router.patch(
+    "/tournament-prediction-questions/{question_id}",
+    response_model=TournamentPredictionQuestionRead,
+)
+def update_tournament_prediction_question(
+    question_id: int,
+    payload: TournamentPredictionQuestionUpdate,
+    db: Session = Depends(get_db),
+) -> TournamentPredictionQuestion:
+    question = db.get(TournamentPredictionQuestion, question_id)
+    if question is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction question not found")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(question, field, value)
+
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+@router.post(
+    "/tournament-prediction-questions/{question_id}/options",
+    response_model=TournamentPredictionOptionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_tournament_prediction_option(
+    question_id: int,
+    payload: TournamentPredictionOptionCreate,
+    db: Session = Depends(get_db),
+) -> TournamentPredictionOption:
+    question = db.get(TournamentPredictionQuestion, question_id)
+    if question is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction question not found")
+    if payload.team_id is not None and db.get(Team, payload.team_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+    option = TournamentPredictionOption(question_id=question_id, **payload.model_dump())
+    db.add(option)
+    db.commit()
+    db.refresh(option)
+    return option
+
+
+@router.patch(
+    "/tournament-prediction-options/{option_id}",
+    response_model=TournamentPredictionOptionRead,
+)
+def update_tournament_prediction_option(
+    option_id: int,
+    payload: TournamentPredictionOptionUpdate,
+    db: Session = Depends(get_db),
+) -> TournamentPredictionOption:
+    option = db.get(TournamentPredictionOption, option_id)
+    if option is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction option not found")
+    if payload.team_id is not None and db.get(Team, payload.team_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(option, field, value)
+
+    db.commit()
+    db.refresh(option)
+    return option
+
+
+@router.post(
+    "/tournament-prediction-questions/{question_id}/resolve",
+    response_model=TournamentPredictionQuestionRead,
+)
+def resolve_tournament_prediction_question_endpoint(
+    question_id: int,
+    payload: TournamentPredictionResolve,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+) -> TournamentPredictionQuestion:
+    question = db.scalar(
+        select(TournamentPredictionQuestion)
+        .options(
+            sa.orm.selectinload(TournamentPredictionQuestion.options).selectinload(TournamentPredictionOption.team),
+            sa.orm.selectinload(TournamentPredictionQuestion.result),
+        )
+        .where(TournamentPredictionQuestion.id == question_id)
+    )
+    if question is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction question not found")
+
+    resolve_tournament_prediction_question(
+        db=db,
+        question=question,
+        payload=payload,
+        resolved_by_user_id=current_admin.id,
+    )
+    add_system_log(
+        db,
+        "admin_tournament_prediction_resolved",
+        user=current_admin,
+        payload={
+            "question_id": question.id,
+            "correct_option_id": payload.correct_option_id,
+            "correct_text": payload.correct_text,
+        },
+    )
+    db.commit()
+
+    refreshed = db.scalar(
+        select(TournamentPredictionQuestion)
+        .options(
+            sa.orm.selectinload(TournamentPredictionQuestion.options).selectinload(TournamentPredictionOption.team),
+            sa.orm.selectinload(TournamentPredictionQuestion.result),
+        )
+        .where(TournamentPredictionQuestion.id == question_id)
+    )
+    if refreshed is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction question not found")
+    setattr(refreshed, "resolution_summary", build_tournament_prediction_resolution_summary(db, refreshed.id))
+    return refreshed
+
+
 @router.get("/tournaments/{tournament_id}/completion-readiness", response_model=TournamentCompletionReadinessRead)
 def get_tournament_completion_readiness(
     tournament_id: int,
@@ -278,6 +486,10 @@ def create_match(
 ) -> Match:
     if db.get(Tournament, payload.tournament_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found")
+    if payload.team_1_id is not None and db.get(Team, payload.team_1_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team 1 not found")
+    if payload.team_2_id is not None and db.get(Team, payload.team_2_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team 2 not found")
 
     match = Match(**payload.model_dump())
     db.add(match)
@@ -403,6 +615,10 @@ def update_match(match_id: int, payload: MatchUpdate, db: Session = Depends(get_
     data = payload.model_dump(exclude_unset=True)
     if "tournament_id" in data and db.get(Tournament, data["tournament_id"]) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found")
+    if "team_1_id" in data and data["team_1_id"] is not None and db.get(Team, data["team_1_id"]) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team 1 not found")
+    if "team_2_id" in data and data["team_2_id"] is not None and db.get(Team, data["team_2_id"]) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team 2 not found")
 
     for field, value in data.items():
         setattr(match, field, value)

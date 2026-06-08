@@ -8,10 +8,25 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models import League, LeagueMember, LeagueStatus, Tournament, TournamentStatus, User
-from app.schemas.league import LeagueCreate, LeagueDetail, LeagueJoinRequest, LeagueRankingResponse, LeagueRead, LeagueUpdate
+from app.schemas.league import (
+    DEFAULT_PRIZE_DESCRIPTION,
+    LeagueCreate,
+    LeagueDetail,
+    LeagueJoinRequest,
+    LeagueRankingResponse,
+    LeagueRead,
+    LeagueUpdate,
+)
 from app.services.rankings import build_league_ranking
 
 router = APIRouter(prefix="/leagues", tags=["Leagues"])
+
+
+def normalize_prize_description(value: str | None) -> str:
+    if value is None:
+        return DEFAULT_PRIZE_DESCRIPTION
+    stripped = value.strip()
+    return stripped or DEFAULT_PRIZE_DESCRIPTION
 
 
 def generate_invite_code() -> str:
@@ -77,7 +92,7 @@ def create_league(
         tournament_id=payload.tournament_id,
         name=payload.name,
         description=payload.description,
-        prize_description=payload.prize_description,
+        prize_description=normalize_prize_description(payload.prize_description),
         invite_code=create_unique_invite_code(db),
     )
     db.add(league)
@@ -170,6 +185,8 @@ def update_league(
     ensure_joinable_league(league)
 
     for field, value in payload.model_dump(exclude_unset=True).items():
+        if field == "prize_description":
+            value = normalize_prize_description(value)
         setattr(league, field, value)
 
     db.commit()

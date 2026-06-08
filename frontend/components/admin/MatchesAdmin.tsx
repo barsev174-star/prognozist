@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 
 import { AdminField, inputClassName } from "@/components/admin/AdminField";
 import { TeamLogo } from "@/components/TeamLogo";
-import { apiGet, apiPost, type Match, type Question } from "@/lib/api";
+import { apiGet, apiPost, type Match, type Question, type Team, type Tournament } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta } from "@/lib/matchStatus";
-import { worldCupTeams, type WorldCupTeam } from "@/lib/worldCupTeams";
 
-type Tournament = { id: number; name: string };
 type MatchQuestions = {
   public_questions: Question[];
   public_question: Question | null;
@@ -17,6 +15,8 @@ type MatchQuestions = {
 
 type MatchForm = {
   tournament_id: string;
+  team_1_id: string;
+  team_2_id: string;
   team_1: string;
   team_2: string;
   team_1_logo: string;
@@ -27,10 +27,13 @@ type MatchForm = {
 
 export function MatchesAdmin() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<MatchQuestions | null>(null);
   const [form, setForm] = useState<MatchForm>({
     tournament_id: "",
+    team_1_id: "",
+    team_2_id: "",
     team_1: "",
     team_2: "",
     team_1_logo: "",
@@ -51,11 +54,13 @@ export function MatchesAdmin() {
   const isSelectedResultCompleted = selectedResultMatch?.status === "completed";
 
   async function load() {
-    const [tournamentRows, matchRows] = await Promise.all([
+    const [tournamentRows, teamRows, matchRows] = await Promise.all([
       apiGet<Tournament[]>("/admin/tournaments"),
+      apiGet<Team[]>("/admin/teams"),
       apiGet<Match[]>("/admin/matches"),
     ]);
     setTournaments(tournamentRows);
+    setTeams(teamRows);
     setMatches(matchRows);
     if (!form.tournament_id && tournamentRows[0]) {
       setForm((current) => ({ ...current, tournament_id: String(tournamentRows[0].id) }));
@@ -85,18 +90,19 @@ export function MatchesAdmin() {
   }
 
   useEffect(() => {
-    load().catch(() => setMessage("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РјР°С‚С‡Рё. РџСЂРѕРІРµСЂСЊС‚Рµ РІС…РѕРґ РІ Р°РґРјРёРЅРєСѓ."));
+    load().catch(() => setMessage("Не удалось загрузить матчи. Проверьте вход в админку."));
   }, []);
 
   useEffect(() => {
     loadQuestions(resultForm.match_id).catch(() => setSelectedQuestions(null));
   }, [resultForm.match_id]);
 
-  function applyTeam(side: 1 | 2, team: WorldCupTeam) {
+  function applyTeam(side: 1 | 2, team: Team) {
     setForm((current) => ({
       ...current,
+      [`team_${side}_id`]: String(team.id),
       [`team_${side}`]: team.name,
-      [`team_${side}_logo`]: team.logo,
+      [`team_${side}_logo`]: team.logo_url || team.flag_emoji || "",
     }));
   }
 
@@ -108,15 +114,25 @@ export function MatchesAdmin() {
       await apiPost<Match>("/admin/matches", {
         ...form,
         tournament_id: Number(form.tournament_id),
+        team_1_id: form.team_1_id ? Number(form.team_1_id) : null,
+        team_2_id: form.team_2_id ? Number(form.team_2_id) : null,
         team_1_logo: form.team_1_logo || null,
         team_2_logo: form.team_2_logo || null,
         start_time: new Date(form.start_time).toISOString(),
       });
-      setForm({ ...form, team_1: "", team_2: "", team_1_logo: "", team_2_logo: "" });
-      setMessage("РњР°С‚С‡ СЃРѕР·РґР°РЅ.");
+      setForm({
+        ...form,
+        team_1_id: "",
+        team_2_id: "",
+        team_1: "",
+        team_2: "",
+        team_1_logo: "",
+        team_2_logo: "",
+      });
+      setMessage("Матч создан.");
       await load();
     } catch {
-      setMessage("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РјР°С‚С‡. РџСЂРѕРІРµСЂСЊС‚Рµ, С‡С‚Рѕ РІС‹Р±СЂР°РЅ С‚СѓСЂРЅРёСЂ, РєРѕРјР°РЅРґС‹ Р·Р°РїРѕР»РЅРµРЅС‹, Рё РІС‹РїРѕР»РЅРµРЅ РІС…РѕРґ РІ Р°РґРјРёРЅРєСѓ.");
+      setMessage("Не удалось создать матч. Проверьте турнир, команды и вход в админку.");
     }
   }
 
@@ -133,19 +149,19 @@ export function MatchesAdmin() {
         ),
         vip_correct_answer: resultForm.vip_correct_answer === "true",
       });
-      setMessage("РњР°С‚С‡ Р·Р°РІРµСЂС€РµРЅ, Р±Р°Р»Р»С‹ РЅР°С‡РёСЃР»РµРЅС‹, РїСѓР±Р»РёРєР°С†РёСЏ РѕС‚РїСЂР°РІР»РµРЅР° РІ VIP-РіСЂСѓРїРїСѓ РїСЂРё РЅР°СЃС‚СЂРѕРµРЅРЅРѕРј РєР°РЅР°Р»Рµ.");
+      setMessage("Матч завершен, баллы начислены, публикация отправлена в VIP-группу при настроенном канале.");
       await load();
       await loadQuestions(resultForm.match_id);
     } catch {
-      setMessage("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РІРµСЂС€РёС‚СЊ РјР°С‚С‡. Р’РѕР·РјРѕР¶РЅРѕ, РѕРЅ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅ РёР»Рё Сѓ РІРѕРїСЂРѕСЃРѕРІ РЅРµ С…РІР°С‚Р°РµС‚ РѕС‚РІРµС‚РѕРІ.");
+      setMessage("Не удалось завершить матч. Возможно, он уже завершен или у вопросов не хватает ответов.");
     }
   }
 
   return (
     <div className="grid gap-4 xl:grid-cols-[380px_420px_1fr]">
       <form onSubmit={createMatch} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">РЎРѕР·РґР°С‚СЊ РјР°С‚С‡</h2>
-        <AdminField label="РўСѓСЂРЅРёСЂ">
+        <h2 className="text-base font-semibold">Создать матч</h2>
+        <AdminField label="Турнир">
           <select className={inputClassName} value={form.tournament_id} onChange={(event) => setForm({ ...form, tournament_id: event.target.value })}>
             {tournaments.map((tournament) => (
               <option key={tournament.id} value={tournament.id}>
@@ -156,31 +172,35 @@ export function MatchesAdmin() {
         </AdminField>
 
         <TeamSelect
-          title="РљРѕРјР°РЅРґР° 1"
+          title="Команда 1"
+          teams={teams}
+          selectedTeamId={form.team_1_id}
           name={form.team_1}
           logo={form.team_1_logo}
           onPresetSelect={(team) => applyTeam(1, team)}
-          onNameChange={(team_1) => setForm({ ...form, team_1 })}
+          onNameChange={(team_1) => setForm({ ...form, team_1_id: "", team_1 })}
           onLogoChange={(team_1_logo) => setForm({ ...form, team_1_logo })}
         />
         <TeamSelect
-          title="РљРѕРјР°РЅРґР° 2"
+          title="Команда 2"
+          teams={teams}
+          selectedTeamId={form.team_2_id}
           name={form.team_2}
           logo={form.team_2_logo}
           onPresetSelect={(team) => applyTeam(2, team)}
-          onNameChange={(team_2) => setForm({ ...form, team_2 })}
+          onNameChange={(team_2) => setForm({ ...form, team_2_id: "", team_2 })}
           onLogoChange={(team_2_logo) => setForm({ ...form, team_2_logo })}
         />
 
-        <AdminField label="Р’СЂРµРјСЏ РЅР°С‡Р°Р»Р°">
+        <AdminField label="Время начала">
           <input type="datetime-local" className={inputClassName} value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} />
         </AdminField>
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">РЎРѕР·РґР°С‚СЊ РјР°С‚С‡</button>
+        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать матч</button>
       </form>
 
       <form onSubmit={completeMatch} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">Р—Р°РІРµСЂС€РёС‚СЊ РјР°С‚С‡ Рё РЅР°С‡РёСЃР»РёС‚СЊ Р±Р°Р»Р»С‹</h2>
-        <AdminField label="РњР°С‚С‡">
+        <h2 className="text-base font-semibold">Завершить матч и начислить баллы</h2>
+        <AdminField label="Матч">
           <select
             className={inputClassName}
             value={resultForm.match_id}
@@ -207,18 +227,18 @@ export function MatchesAdmin() {
             </div>
             {isSelectedResultCompleted && selectedResultMatch.team_1_score !== null && selectedResultMatch.team_2_score !== null ? (
               <div className="mt-1">
-                РС‚РѕРіРѕРІС‹Р№ СЃС‡РµС‚: {selectedResultMatch.team_1_score}:{selectedResultMatch.team_2_score}. РџРѕРІС‚РѕСЂРЅРѕРµ Р·Р°РІРµСЂС€РµРЅРёРµ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅРѕ.
+                Итоговый счет: {selectedResultMatch.team_1_score}:{selectedResultMatch.team_2_score}. Повторное завершение заблокировано.
               </div>
             ) : (
-              <div className="mt-1">РњР°С‚С‡ РµС‰Рµ РјРѕР¶РЅРѕ Р·Р°РІРµСЂС€РёС‚СЊ РїРѕСЃР»Рµ РІРЅРµСЃРµРЅРёСЏ РёС‚РѕРіРѕРІРѕРіРѕ СЃС‡РµС‚Р° Рё РїСЂР°РІРёР»СЊРЅС‹С… РѕС‚РІРµС‚РѕРІ.</div>
+              <div className="mt-1">Матч еще можно завершить после внесения итогового счета и правильных ответов.</div>
             )}
           </div>
         ) : null}
         <div className="grid grid-cols-2 gap-2">
-          <AdminField label="РЎС‡РµС‚ 1">
+          <AdminField label="Счет 1">
             <input type="number" min={0} className={inputClassName} value={resultForm.team_1_score} disabled={isSelectedResultCompleted} onChange={(event) => setResultForm({ ...resultForm, team_1_score: event.target.value })} />
           </AdminField>
-          <AdminField label="РЎС‡РµС‚ 2">
+          <AdminField label="Счет 2">
             <input type="number" min={0} className={inputClassName} value={resultForm.team_2_score} disabled={isSelectedResultCompleted} onChange={(event) => setResultForm({ ...resultForm, team_2_score: event.target.value })} />
           </AdminField>
         </div>
@@ -230,7 +250,7 @@ export function MatchesAdmin() {
         ).map((question) => (
           <QuestionAnswerField
             key={question.id}
-            label={`РџСЂР°РІРёР»СЊРЅС‹Р№ РѕС‚РІРµС‚ РїСѓР±Р»РёС‡РЅРѕРіРѕ РІРѕРїСЂРѕСЃР° ${question.slot}`}
+            label={`Правильный ответ публичного вопроса ${question.slot}`}
             questionText={question.text}
             value={resultForm.public_correct_answers[question.id] ?? "true"}
             disabled={isSelectedResultCompleted}
@@ -243,17 +263,17 @@ export function MatchesAdmin() {
           />
         ))}
         {selectedQuestions && selectedQuestions.public_questions.length === 0 && !selectedQuestions.public_question ? (
-          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">РџСѓР±Р»РёС‡РЅС‹Рµ РІРѕРїСЂРѕСЃС‹ РґР»СЏ РІС‹Р±СЂР°РЅРЅРѕРіРѕ РјР°С‚С‡Р° РЅРµ Р·Р°РґР°РЅС‹.</div>
+          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">Публичный вопрос для выбранного матча не настроен.</div>
         ) : null}
         <QuestionAnswerField
-          label="РџСЂР°РІРёР»СЊРЅС‹Р№ РѕС‚РІРµС‚ VIP-РІРѕРїСЂРѕСЃР°"
+          label="Правильный ответ VIP-вопроса"
           questionText={selectedQuestions?.vip_question?.text}
           value={resultForm.vip_correct_answer}
           disabled={isSelectedResultCompleted}
           onChange={(value) => setResultForm({ ...resultForm, vip_correct_answer: value })}
         />
         <button disabled={isSelectedResultCompleted} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-          {isSelectedResultCompleted ? "РњР°С‚С‡ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅ" : "Р—Р°РІРµСЂС€РёС‚СЊ Рё РЅР°С‡РёСЃР»РёС‚СЊ"}
+          {isSelectedResultCompleted ? "Матч уже завершен" : "Завершить и начислить"}
         </button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
       </form>
@@ -279,7 +299,7 @@ export function MatchesAdmin() {
                 <QuestionReadinessBadge match={match} />
               </div>
               {match.team_1_score !== null && match.team_2_score !== null ? (
-                <div className="mt-2 text-sm">РС‚РѕРіРѕРІС‹Р№ СЃС‡РµС‚: {match.team_1_score}:{match.team_2_score}</div>
+                <div className="mt-2 text-sm">Итоговый счет: {match.team_1_score}:{match.team_2_score}</div>
               ) : null}
             </div>
           );
@@ -291,6 +311,8 @@ export function MatchesAdmin() {
 
 function TeamSelect({
   title,
+  teams,
+  selectedTeamId,
   name,
   logo,
   onPresetSelect,
@@ -298,9 +320,11 @@ function TeamSelect({
   onLogoChange,
 }: {
   title: string;
+  teams: Team[];
+  selectedTeamId: string;
   name: string;
   logo: string;
-  onPresetSelect: (team: WorldCupTeam) => void;
+  onPresetSelect: (team: Team) => void;
   onNameChange: (value: string) => void;
   onLogoChange: (value: string) => void;
 }) {
@@ -310,29 +334,29 @@ function TeamSelect({
         <TeamLogo logo={logo} name={name || title} />
         <div className="text-sm font-medium">{title}</div>
       </div>
-      <AdminField label="Р’С‹Р±СЂР°С‚СЊ РёР· Р§Рњ-2026">
+      <AdminField label="Выбрать из списка сборных">
         <select
           className={inputClassName}
-          value={worldCupTeams.some((team) => team.name === name) ? name : ""}
+          value={selectedTeamId}
           onChange={(event) => {
-            const team = worldCupTeams.find((item) => item.name === event.target.value);
+            const team = teams.find((item) => String(item.id) === event.target.value);
             if (team) {
               onPresetSelect(team);
             }
           }}
         >
-          <option value="">Р’С‹Р±РµСЂРёС‚Рµ РєРѕРјР°РЅРґСѓ</option>
-          {worldCupTeams.map((team) => (
-            <option key={`${team.confederation}-${team.name}`} value={team.name}>
-              {team.logo} {team.name} В· {team.confederation}
+          <option value="">Выберите команду</option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>
+              {(team.flag_emoji ?? team.logo_url ?? "")} {team.name} - {(team.fifa_code ?? team.confederation).toUpperCase()}
             </option>
           ))}
         </select>
       </AdminField>
-      <AdminField label="РќР°Р·РІР°РЅРёРµ">
+      <AdminField label="Название">
         <input className={inputClassName} value={name} onChange={(event) => onNameChange(event.target.value)} />
       </AdminField>
-      <AdminField label="Р—РЅР°С‡РѕРє РёР»Рё URL Р»РѕРіРѕС‚РёРїР°">
+      <AdminField label="Логотип или URL эмодзи">
         <input className={inputClassName} value={logo} onChange={(event) => onLogoChange(event.target.value)} />
       </AdminField>
     </section>
@@ -356,11 +380,11 @@ function QuestionAnswerField({
     <AdminField label={label}>
       <div className="flex flex-col gap-2">
         <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">
-          {questionText ?? "Р’РѕРїСЂРѕСЃ РґР»СЏ РІС‹Р±СЂР°РЅРЅРѕРіРѕ РјР°С‚С‡Р° РЅРµ Р·Р°РґР°РЅ."}
+          {questionText ?? "Вопрос для выбранного матча еще не задан."}
         </div>
         <select className={inputClassName} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
-          <option value="true">Р”Р°</option>
-          <option value="false">РќРµС‚</option>
+          <option value="true">Да</option>
+          <option value="false">Нет</option>
         </select>
       </div>
     </AdminField>
@@ -370,12 +394,12 @@ function QuestionAnswerField({
 function formatQuestionReadiness(match: Match): string {
   const publicCount = match.public_questions_count ?? 0;
   const vipReady = Boolean(match.vip_question_exists);
-  return publicCount >= 2 && vipReady ? "РІРѕРїСЂРѕСЃС‹ OK" : `РІРѕРїСЂРѕСЃС‹ ${publicCount}/2${vipReady ? " + VIP" : ""}`;
+  return publicCount >= 2 && vipReady ? "Вопросы OK" : `Вопросы ${publicCount}/2${vipReady ? " + VIP" : ""}`;
 }
 
 function formatAdminMatchOptionWithStatus(match: Match): string {
   const status = getMatchStatusMeta(match);
-  return `${status.label} · ${formatQuestionReadiness(match)} · ${match.team_1} - ${match.team_2}`;
+  return `${status.label} - ${formatQuestionReadiness(match)} - ${match.team_1} - ${match.team_2}`;
 }
 
 function QuestionReadinessBadge({ match }: { match: Match }) {
@@ -391,7 +415,7 @@ function QuestionReadinessBadge({ match }: { match: Match }) {
           : "inline-flex rounded-md bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800"
       }
     >
-      {isComplete ? "Р’РѕРїСЂРѕСЃС‹ Р·Р°РїРѕР»РЅРµРЅС‹" : `Р’РѕРїСЂРѕСЃС‹: ${publicCount}/2, VIP ${vipReady ? "РµСЃС‚СЊ" : "РЅРµС‚"}`}
+      {isComplete ? "Вопросы настроены" : `Вопросы: ${publicCount}/2, VIP ${vipReady ? "есть" : "нет"}`}
     </span>
   );
 }

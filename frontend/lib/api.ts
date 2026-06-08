@@ -11,6 +11,15 @@ export type UserProfile = {
   created_at: string;
 };
 
+export type VipStatus = {
+  is_active: boolean;
+  premium_until: string | null;
+  stars_amount: number;
+  duration_days: number;
+  invite_link: string | null;
+  channel_enabled: boolean;
+};
+
 export type AuthResponse = {
   access_token: string;
   token_type: "bearer";
@@ -41,6 +50,8 @@ export type Question = {
 export type Match = {
   id: number;
   tournament_id: number;
+  team_1_id?: number | null;
+  team_2_id?: number | null;
   team_1: string;
   team_2: string;
   team_1_logo: string | null;
@@ -125,6 +136,97 @@ export type League = {
   created_at: string;
   completed_at: string | null;
   updated_at: string;
+};
+
+export type Tournament = {
+  id: number;
+  season_id: number;
+  name: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  status: string;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Team = {
+  id: number;
+  slug: string;
+  name: string;
+  short_name: string | null;
+  fifa_code: string | null;
+  flag_emoji: string | null;
+  logo_url: string | null;
+  confederation: string;
+  status: string;
+  is_national_team: boolean;
+  is_placeholder: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentPredictionOption = {
+  id: number;
+  question_id: number;
+  team_id: number | null;
+  label: string;
+  sort_order: number;
+  team: Team | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentPredictionResult = {
+  id: number;
+  question_id: number;
+  correct_option_id: number | null;
+  correct_text: string | null;
+  resolved_by_user_id: number | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentPredictionResolutionSummary = {
+  total_predictions: number;
+  correct_predictions: number;
+  total_points_awarded: number;
+};
+
+export type TournamentPrediction = {
+  id: number;
+  question_id: number;
+  user_id: number;
+  selected_option_id: number | null;
+  free_text: string | null;
+  points_awarded: number | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentPredictionQuestion = {
+  id: number;
+  tournament_id: number;
+  code: string;
+  title: string;
+  description: string | null;
+  option_type: "team" | "player" | "custom";
+  status: "draft" | "active" | "locked" | "resolved" | "cancelled";
+  points: number;
+  lock_at: string | null;
+  resolved_at: string | null;
+  options: TournamentPredictionOption[];
+  result: TournamentPredictionResult | null;
+  resolution_summary: TournamentPredictionResolutionSummary | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentPredictionQuestionWithUserPrediction = TournamentPredictionQuestion & {
+  user_prediction: TournamentPrediction | null;
 };
 
 export type AdminSystemLog = {

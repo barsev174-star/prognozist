@@ -5,12 +5,14 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.models import LeagueStatus
 from app.schemas.ranking import RankingResponse
 
+DEFAULT_PRIZE_DESCRIPTION = "Уточняется"
+
 
 class LeagueCreate(BaseModel):
     tournament_id: int
     name: str = Field(min_length=1, max_length=255)
     description: str | None = None
-    prize_description: str | None = None
+    prize_description: str | None = DEFAULT_PRIZE_DESCRIPTION
 
 
 class LeagueUpdate(BaseModel):
