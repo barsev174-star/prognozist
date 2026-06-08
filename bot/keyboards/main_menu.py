@@ -10,12 +10,20 @@ REFERRALS_LABEL = "\u0420\u0435\u0444\u0435\u0440\u0430\u043b\u044b"
 SUPPORT_LABEL = "\u041f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430"
 
 
+def build_webapp_url(path: str = "/") -> str:
+    base_url = settings.telegram_webapp_url.rstrip("/")
+    normalized_path = path if path.startswith("/") else f"/{path}"
+    if normalized_path == "/":
+        return base_url
+    return f"{base_url}{normalized_path}"
+
+
 def main_menu_keyboard() -> ReplyKeyboardMarkup:
     app_button = KeyboardButton(text=OPEN_APP_LABEL)
     if settings.telegram_webapp_url.startswith("https://"):
         app_button = KeyboardButton(
             text=OPEN_APP_LABEL,
-            web_app=WebAppInfo(url=settings.telegram_webapp_url),
+            web_app=WebAppInfo(url=build_webapp_url("/")),
         )
 
     return ReplyKeyboardMarkup(

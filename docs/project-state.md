@@ -150,6 +150,9 @@ Known recent service-clone history before this design batch:
 
 - player-facing match section was cleaned from mojibake;
 - VIP page, rankings, and home structure were improved;
+- leagues now have one-tap share and copy actions for invite flow;
+- league cards now render the in-league ranking directly in the Mini App;
+- direct entry into player sections now restores Telegram auth instead of assuming the home page was opened first;
 - release polish pass started for key player-facing screens:
   - home
   - matches list
@@ -198,12 +201,60 @@ Why it is not higher yet:
 
 - payment flow still needs final donation end-to-end validation;
 - there is still remaining mojibake in some non-player/admin/bot areas;
+- leagues may still want deeper auto-join Telegram invite links later;
+- bot UX still needs real-device validation after wiring the buttons and menu button;
 - monitoring is still lightweight;
 - broader real-user manual testing is still needed.
 
 ## Highest-Priority Open Work
 
-### 1. Release Visual Polish Completion
+### 1. Leagues UX Completion
+
+Current state:
+
+- league creation works;
+- league join by invite code works;
+- backend league ranking already exists;
+- frontend now shows the ranking inside each league card;
+- invite flow now has share and copy actions;
+- league ranking keeps zero-point members visible instead of hiding them.
+
+Next improvements:
+
+- optionally build a Telegram deep-link/share helper around the invite code;
+- decide whether a dedicated full-screen league detail view is still needed.
+
+Estimated effort:
+
+- follow-up polish: low;
+- deeper auto-join/deep-link flow: medium.
+
+### 2. Bot Navigation / `/start` UX
+
+Current state:
+
+- `/start` shows reply-keyboard buttons and a separate inline Mini App button;
+- VIP and donation buttons are handled;
+- ranking / leagues / referrals / support buttons now have handlers;
+- the bot now sets a persistent Telegram menu button to the Mini App when the URL is HTTPS;
+- opening the Mini App outside Telegram shows the expected "open inside Telegram" style behavior because Telegram init data is required.
+
+What should happen next:
+
+- verify the new section-specific entry points on real Telegram clients;
+- verify the local share flow when `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` is absent, because it now prefers Telegram text-only sharing and falls back to copying only if share is unavailable;
+- consider start-param/deep-link routing later if league/referral onboarding needs to be even shorter.
+
+Important product constraint:
+
+- this is not solved by changing the message input field itself;
+- Telegram supports reply keyboards, inline buttons, commands, and menu button, not custom in-input app navigation.
+
+Estimated effort:
+
+- follow-up validation/polish: low to medium.
+
+### 3. Release Visual Polish Completion
 
 Continue the current polish pass and verify it in the Mini App on real devices.
 
@@ -213,19 +264,7 @@ Focus:
 - keep the new visual direction consistent across player-facing screens;
 - avoid redesigning flows while polishing.
 
-### 2. Leagues UX
-
-Current player flow:
-
-- league creation already uses tournament selection by name;
-- league join works by invite code shown on the league card.
-
-Next improvement:
-
-- add one-tap share for the invite code from the Mini App;
-- optionally build a Telegram deep-link/share helper around the invite code.
-
-### 3. Teams / World Cup 2026 Data
+### 4. Teams / World Cup 2026 Data
 
 Need to move toward a proper team reference model instead of relying on string-only team fields and static frontend lists.
 
@@ -235,7 +274,7 @@ Desired next step:
 - prepare safe logo assets strategy;
 - connect admin match creation to structured team data.
 
-### 4. Payments Finalization
+### 5. Payments Finalization
 
 VIP is in good shape.
 
@@ -246,7 +285,26 @@ Still needed:
 - decide whether donation analytics should remain logs-only or get a fuller admin view later.
 - finish real VIP-channel smoke test with a configured production channel and bot admin rights.
 
-### 5. Operations
+### 6. Production Data Cleanup
+
+Need a pre-launch cleanup pass on the VPS database.
+
+Goal:
+
+- remove test gameplay / test user data;
+- preserve required admin access;
+- preserve only the reference data that should remain for launch.
+
+Important caution:
+
+- this is not hard technically, but it is high-risk operationally;
+- backup must be created first;
+- exact cleanup SQL should be prepared only after deciding what must stay:
+  - admins only;
+  - admins + seasons/tournaments/teams;
+  - admins + configured production content.
+
+### 7. Operations
 
 Current baseline exists:
 
@@ -281,6 +339,20 @@ Then run:
 bash infra/scripts/check-production-health.sh
 ```
 
+Current known production status as of `2026-06-08`:
+
+- branch with tournament predictions was merged into `main` and deployed on VPS;
+- migration `0007` is applied;
+- production health check passed after fixing `.env.production` quoting;
+- a later deploy briefly returned `502` during startup, but recovered successfully;
+- bot polling is running in production after token replacement.
+
+Current known app issue after deploy:
+
+- creating a tournament prediction question shows a frontend failure message;
+- likely root cause found locally: missing `TournamentPredictionQuestionStatus` import in `backend/app/api/v1/admin.py`;
+- local fix was added in the main workspace but not yet committed/deployed through the safe Git path.
+
 ## Notes For Another Chat
 
 If another Codex chat starts without this context, it should be told all of the following:
@@ -291,10 +363,15 @@ If another Codex chat starts without this context, it should be told all of the 
 - production domain: `https://prognozistapp.ru`;
 - backend health: `https://prognozistapp.ru/api/v1/health`;
 - bot polling, Mini App, HTTPS, and admin login are working;
-- migrations are applied through `0006`;
+- migrations are applied through `0007`;
 - donations via Telegram Stars were added;
+- tournament predictions were merged and deployed;
 - operational scripts/docs were added;
 - release design polish is in progress;
+- league share UX and league ranking UI are the next strong product wins;
+- bot main menu has dead buttons beyond VIP/donation and needs handler work;
+- production database cleanup before launch still needs a careful plan;
+- there is a likely undeployed local fix for tournament-question save/reload in `backend/app/api/v1/admin.py`;
 - main workspace Git may fail on `index.lock permission denied`;
 - commits/pushes should usually be done through `.codex-push-check`;
 - before any work, run:

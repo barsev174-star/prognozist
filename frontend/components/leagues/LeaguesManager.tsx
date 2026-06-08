@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { LocalAuthNotice } from "@/components/LocalAuthNotice";
-import { apiGet, apiPatch, apiPost, hasAccessToken, type League, type Tournament } from "@/lib/api";
+import { apiGet, apiPatch, apiPost, hasAccessToken, type League, type RankingEntry, type Tournament } from "@/lib/api";
 
 const loadError = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043b\u0438\u0433\u0438.";
 const createSuccess = "\u041b\u0438\u0433\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0430.";
@@ -35,10 +35,34 @@ const prizeLabel = "\u041f\u0440\u0438\u0437:";
 const prizeMissing = "\u0423\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f";
 const updatePrizeButton = "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043f\u0440\u0438\u0437";
 const chooseTournamentLabel = "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0442\u0443\u0440\u043d\u0438\u0440";
+const shareButton = "\u041f\u043e\u0434\u0435\u043b\u0438\u0442\u044c\u0441\u044f";
+const copyButton = "\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c";
+const shareSuccess = "\u041f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u0435 \u0433\u043e\u0442\u043e\u0432\u043e \u043a \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0435.";
+const shareFallback = "\u041e\u0442\u043a\u0440\u044b\u043b\u0438 \u043e\u043a\u043d\u043e \u043f\u043e\u0434\u0435\u043b\u0438\u0442\u044c\u0441\u044f.";
+const shareError = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u0435.";
+const copySuccess = "\u041a\u043e\u0434 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d.";
+const copyError = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u043a\u043e\u0434.";
+const shareCopiedFallback =
+  "\u0412 \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e\u0439 \u0441\u0431\u043e\u0440\u043a\u0435 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d bot username, \u043f\u043e\u044d\u0442\u043e\u043c\u0443 \u0442\u0435\u043a\u0441\u0442 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0441\u0442\u043e \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d.";
+const shareTextOnlyFallback =
+  "\u041e\u0442\u043a\u0440\u044b\u043b\u0438 \u043e\u043a\u043d\u043e \u043f\u043e\u0434\u0435\u043b\u0438\u0442\u044c\u0441\u044f \u0441 \u0442\u0435\u043a\u0441\u0442\u043e\u043c \u0438 \u043a\u043e\u0434\u043e\u043c \u043b\u0438\u0433\u0438.";
+const rankingTitle = "\u0420\u0435\u0439\u0442\u0438\u043d\u0433 \u043b\u0438\u0433\u0438";
+const rankingEmpty = "\u0420\u0435\u0439\u0442\u0438\u043d\u0433 \u043f\u043e\u043a\u0430 \u043f\u0443\u0441\u0442.";
+const pointsLabel = "\u043e\u0447\u043a\u043e\u0432";
+const currentPlayerLabel = "\u0412\u044b";
+
+type LeagueRankingResponse = {
+  league: League;
+  ranking: {
+    entries: RankingEntry[];
+    current_user_entry: RankingEntry | null;
+  };
+};
 
 export function LeaguesManager() {
   const [leagues, setLeagues] = useState<League[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [leagueRankings, setLeagueRankings] = useState<Record<number, LeagueRankingResponse["ranking"]>>({});
   const [hasToken, setHasToken] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -53,8 +77,15 @@ export function LeaguesManager() {
 
   async function load() {
     const [leagueRows, tournamentRows] = await Promise.all([apiGet<League[]>("/leagues"), apiGet<Tournament[]>("/tournaments")]);
+    const rankingRows = await Promise.all(
+      leagueRows.map(async (league) => {
+        const response = await apiGet<LeagueRankingResponse>(`/leagues/${league.id}/ranking`);
+        return [league.id, response.ranking] as const;
+      }),
+    );
     setLeagues(leagueRows);
     setTournaments(tournamentRows);
+    setLeagueRankings(Object.fromEntries(rankingRows));
     setEditingPrize(Object.fromEntries(leagueRows.map((league) => [league.id, league.prize_description ?? prizePlaceholder])));
     setCreateForm((current) => ({
       ...current,
@@ -116,6 +147,57 @@ export function LeaguesManager() {
       await load();
     } catch {
       setMessage(prizeError);
+    }
+  }
+
+  async function copyInviteCode(league: League) {
+    setMessage(null);
+    try {
+      await navigator.clipboard.writeText(league.invite_code);
+      setMessage(copySuccess);
+    } catch {
+      setMessage(copyError);
+    }
+  }
+
+  async function shareLeagueInvite(league: League) {
+    setMessage(null);
+    const tournamentName = tournaments.find((tournament) => tournament.id === league.tournament_id)?.name ?? `#${league.tournament_id}`;
+    const text = buildLeagueInviteTextSafe(league, tournamentName);
+    const botUsername = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "").replace(/^@/, "");
+    const botUrl = botUsername ? `https://t.me/${botUsername}` : null;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: league.name,
+          text,
+          ...(botUrl ? { url: botUrl } : {}),
+        });
+        setMessage(shareSuccess);
+        return;
+      }
+
+      const shareUrl = botUrl
+        ? `https://t.me/share/url?url=${encodeURIComponent(botUrl)}&text=${encodeURIComponent(text)}`
+        : `https://t.me/share/url?text=${encodeURIComponent(text)}`;
+      const telegramWebApp = window.Telegram?.WebApp as { openTelegramLink?: (url: string) => void } | undefined;
+      if (telegramWebApp?.openTelegramLink) {
+        telegramWebApp.openTelegramLink(shareUrl);
+        setMessage(botUrl ? shareFallback : shareTextOnlyFallback);
+        return;
+      }
+
+      if (!botUrl) {
+        await navigator.clipboard.writeText(text);
+        setMessage(shareCopiedFallback);
+        return;
+      }
+
+      window.open(shareUrl, "_blank", "noopener,noreferrer");
+      setMessage(shareFallback);
+    } catch {
+      setMessage(shareError);
     }
   }
 
@@ -203,6 +285,23 @@ export function LeaguesManager() {
               <div className="rounded-2xl bg-surface px-3 py-2 text-sm">
                 {prizeLabel} {league.prize_description || prizeMissing}
               </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium"
+                  onClick={() => shareLeagueInvite(league)}
+                >
+                  {shareButton}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium"
+                  onClick={() => copyInviteCode(league)}
+                >
+                  {copyButton}
+                </button>
+              </div>
+              <LeagueRankingCard ranking={leagueRankings[league.id]} />
               {league.is_owner ? (
                 <div className="flex flex-col gap-2">
                   <textarea
@@ -223,6 +322,51 @@ export function LeaguesManager() {
           ))
         )}
       </section>
+    </div>
+  );
+}
+
+function LeagueRankingCard({ ranking }: { ranking: LeagueRankingResponse["ranking"] | undefined }) {
+  return (
+    <section className="rounded-2xl border border-black/5 bg-[rgba(23,32,51,0.03)] p-3">
+      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">{rankingTitle}</div>
+      <div className="mt-3 flex flex-col gap-2">
+        {!ranking || ranking.entries.length === 0 ? (
+          <div className="text-sm text-muted">{rankingEmpty}</div>
+        ) : (
+          ranking.entries.map((entry) => <LeagueRankingRow key={entry.user_id} entry={entry} />)
+        )}
+      </div>
+    </section>
+  );
+}
+
+function buildLeagueInviteTextSafe(league: League, tournamentName: string): string {
+  return [
+    `\u041b\u0438\u0433\u0430: ${league.name}`,
+    `\u0422\u0443\u0440\u043d\u0438\u0440: ${tournamentName}`,
+    `\u041a\u043e\u0434 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f: ${league.invite_code}`,
+    "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 Prognozist \u0432 Telegram \u0438 \u0432\u0441\u0442\u0443\u043f\u0438\u0442\u0435 \u043f\u043e \u044d\u0442\u043e\u043c\u0443 \u043a\u043e\u0434\u0443.",
+  ].join("\n");
+}
+
+function LeagueRankingRow({ entry }: { entry: RankingEntry }) {
+  return (
+    <div
+      className={`flex items-center justify-between rounded-2xl px-3 py-2 text-sm ${entry.is_current_user ? "bg-[rgba(15,118,110,0.08)]" : "bg-white/80"}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgba(23,32,51,0.06)] text-xs font-semibold text-muted">
+          #{entry.rank}
+        </div>
+        <div>
+          <div className="font-semibold text-ink">{entry.first_name ?? entry.username ?? `user ${entry.telegram_id}`}</div>
+          <div className="text-xs text-muted">{entry.is_current_user ? currentPlayerLabel : `id ${entry.telegram_id}`}</div>
+        </div>
+      </div>
+      <div className="rounded-full bg-[rgba(23,32,51,0.05)] px-3 py-1 text-sm font-semibold">
+        {entry.points} {pointsLabel}
+      </div>
     </div>
   );
 }

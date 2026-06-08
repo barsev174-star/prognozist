@@ -19,6 +19,11 @@ Last updated: 2026-06-08.
   - public questions
   - VIP question visibility
   - completed match points breakdown
+- Tournament prediction flow is now present in production:
+  - admin screen
+  - player tournament hub
+  - player long-term answers
+  - admin resolution with points award summary
 
 ## Product Direction Right Now
 
@@ -30,6 +35,13 @@ The best current release strategy is:
 4. keep operations safe enough for first real users.
 
 This is better than spreading effort across too many new features.
+
+Updated tactical priority after the latest deploy:
+
+1. smooth leagues sharing and ranking UX;
+2. make bot navigation buttons actually useful;
+3. clean test data from production safely before launch;
+4. continue visual polish after the bigger UX gaps above are reduced.
 
 ## Release Polish Notes
 
@@ -131,15 +143,23 @@ Still important:
 
 ## Leagues Notes
 
-Leagues are promising, but still feel semi-admin in one crucial place:
+Leagues are promising and the backend is already ahead of the UI.
 
-- joining still requires manual copy/paste of the invite code.
+What already exists:
 
-This is still a UX rough edge before broader player onboarding.
+- league creation
+- invite-code join
+- backend endpoint for league ranking
+- Mini App share button for league invites
+- Mini App copy button for invite code
+- in-league ranking block inside each league card
+- safe local fallback: if frontend bot username is not configured, share no longer opens the raw web app URL and prefers Telegram text-only sharing instead
 
-Desired fix:
+Implementation note:
 
-- add a cleaner share flow for the invite code from the Mini App.
+- league ranking is not a heavy backend task anymore;
+- zero-point members should stay visible so new league players do not disappear from the table;
+- the next optional step is a deeper Telegram deep-link/auto-join flow, not the basic share UX itself.
 
 ## Tournament Prediction Notes
 
@@ -156,6 +176,12 @@ Long-term tournament predictions now have a usable product loop:
 Next useful improvement:
 
 - add per-question answer analytics/history if moderation or audit needs grow later.
+
+Current known issue after production deploy:
+
+- creating a tournament prediction question shows a failure message in admin;
+- likely local root cause found: missing `TournamentPredictionQuestionStatus` import inside `backend/app/api/v1/admin.py`;
+- fix exists locally in the main workspace and should be committed/deployed through the safe Git path.
 
 ## Teams / Tournament Data Notes
 
@@ -189,15 +215,60 @@ Still missing for stronger launch safety:
 - off-server backup copy
 - external monitoring/alerts
 
+## Bot UX Notes
+
+Current `/start` behavior is only partially aligned with the menu it shows.
+
+What exists:
+
+- `/start` opens a reply keyboard
+- a separate inline Mini App button is sent
+- VIP and donation buttons are handled
+- ranking / leagues / referrals buttons now reopen Mini App directly in the relevant section
+- support button now answers instead of staying dead
+- Telegram menu button can now be pinned to the Mini App from the bot process
+- direct section entry now can restore Telegram auth instead of depending on the home page to create the session token
+
+What is still weak:
+
+- Mini App opened outside Telegram is expected to fail because Telegram init data is missing
+
+Important product note:
+
+- this is not solved by customizing the message input field itself;
+- the right tools are reply keyboard, inline buttons, menu button, and deep links.
+
+Good near-term improvement:
+
+- keep every visible button working;
+- if onboarding needs another step up later, add deep-link/start-param routing instead of trying to overload chat input UX.
+
+## Production Data Cleanup Notes
+
+Before a wider launch, production should get a controlled cleanup pass.
+
+Goal:
+
+- remove test gameplay and test users;
+- keep required admins and only the reference data that should survive launch.
+
+This is not especially hard technically, but it is easy to do dangerously.
+
+Safe pattern:
+
+1. create PostgreSQL backup;
+2. inspect current row counts and keep-list;
+3. delete only approved categories of test data;
+4. rerun health checks.
+
 ## Current Best Next Steps
 
 Priority order:
 
-1. finish and verify release polish in the actual Mini App;
-2. fix leagues `tournament_id` UX;
-3. prepare structured team/tournament data improvements;
-4. run real donation smoke test;
-5. tighten monitoring/backup automation.
+1. prepare and execute safe production data cleanup;
+2. commit/deploy the local tournament-question admin fix;
+3. continue release polish in the actual Mini App;
+4. decide later whether league invites need a deeper Telegram auto-join link.
 
 ## Handoff Reminder For Future Sessions
 
