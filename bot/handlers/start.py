@@ -5,7 +5,6 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, W
 
 from keyboards.main_menu import (
     LEAGUES_LABEL,
-    OPEN_APP_LABEL,
     RANKING_LABEL,
     REFERRALS_LABEL,
     SUPPORT_LABEL,
@@ -18,6 +17,7 @@ router = Router()
 
 MENU_PROMPT = "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0440\u0430\u0437\u0434\u0435\u043b:"
 OPEN_APP_PROMPT = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c Mini App:"
+OPEN_APP_LABEL = "Mini App"
 RANKING_PROMPT = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0440\u0435\u0439\u0442\u0438\u043d\u0433 \u0432 Mini App:"
 LEAGUES_PROMPT = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0432\u0430\u0448\u0438 \u043b\u0438\u0433\u0438:"
 REFERRALS_PROMPT = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u0440\u0435\u0444\u0435\u0440\u0430\u043b\u044b \u0432 Mini App:"
@@ -39,12 +39,6 @@ async def handle_start(message: Message) -> None:
         OPEN_APP_PROMPT,
         reply_markup=build_section_markup(OPEN_APP_LABEL, "/"),
     )
-
-
-@router.message(F.text == OPEN_APP_LABEL)
-async def handle_open_app_button(message: Message) -> None:
-    await prepare_user(message)
-    await message.answer(OPEN_APP_PROMPT, reply_markup=build_section_markup(OPEN_APP_LABEL, "/"))
 
 
 @router.message(F.text == RANKING_LABEL)

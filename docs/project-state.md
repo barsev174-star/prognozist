@@ -237,6 +237,7 @@ Current state:
 - VIP and donation buttons are handled;
 - ranking / leagues / referrals / support buttons now have handlers;
 - the bot now sets a persistent Telegram menu button to the Mini App when the URL is HTTPS;
+- the extra reply-keyboard `Открыть приложение` button was removed because the Telegram menu button and inline Mini App button are the reliable entry points;
 - opening the Mini App outside Telegram shows the expected "open inside Telegram" style behavior because Telegram init data is required.
 
 What should happen next:

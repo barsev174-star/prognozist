@@ -227,6 +227,7 @@ What exists:
 - ranking / leagues / referrals buttons now reopen Mini App directly in the relevant section
 - support button now answers instead of staying dead
 - Telegram menu button can now be pinned to the Mini App from the bot process
+- the redundant reply-keyboard `Открыть приложение` button was removed because it was the most visible broken entry point
 - direct section entry now can restore Telegram auth instead of depending on the home page to create the session token
 
 What is still weak:
