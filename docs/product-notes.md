@@ -153,7 +153,7 @@ What already exists:
 - Mini App share button for league invites
 - Mini App copy button for invite code
 - in-league ranking block inside each league card
-- safe local fallback: if frontend bot username is not configured, share no longer opens the raw web app URL and falls back to copied invite text instead
+- safe local fallback: if frontend bot username is not configured, share no longer opens the raw web app URL and prefers Telegram text-only sharing instead
 
 Implementation note:
 

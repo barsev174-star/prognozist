@@ -242,7 +242,7 @@ Current state:
 What should happen next:
 
 - verify the new section-specific entry points on real Telegram clients;
-- verify the local share flow when `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` is absent, because it now falls back to copying invite text instead of opening the raw web URL;
+- verify the local share flow when `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` is absent, because it now prefers Telegram text-only sharing and falls back to copying only if share is unavailable;
 - consider start-param/deep-link routing later if league/referral onboarding needs to be even shorter.
 
 Important product constraint:

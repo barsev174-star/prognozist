@@ -44,6 +44,8 @@ const copySuccess = "\u041a\u043e\u0434 \u043f\u0440\u0438\u0433\u043b\u0430\u04
 const copyError = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u043a\u043e\u0434.";
 const shareCopiedFallback =
   "\u0412 \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u043e\u0439 \u0441\u0431\u043e\u0440\u043a\u0435 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d bot username, \u043f\u043e\u044d\u0442\u043e\u043c\u0443 \u0442\u0435\u043a\u0441\u0442 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u0441\u0442\u043e \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d.";
+const shareTextOnlyFallback =
+  "\u041e\u0442\u043a\u0440\u044b\u043b\u0438 \u043e\u043a\u043d\u043e \u043f\u043e\u0434\u0435\u043b\u0438\u0442\u044c\u0441\u044f \u0441 \u0442\u0435\u043a\u0441\u0442\u043e\u043c \u0438 \u043a\u043e\u0434\u043e\u043c \u043b\u0438\u0433\u0438.";
 const rankingTitle = "\u0420\u0435\u0439\u0442\u0438\u043d\u0433 \u043b\u0438\u0433\u0438";
 const rankingEmpty = "\u0420\u0435\u0439\u0442\u0438\u043d\u0433 \u043f\u043e\u043a\u0430 \u043f\u0443\u0441\u0442.";
 const pointsLabel = "\u043e\u0447\u043a\u043e\u0432";
@@ -176,16 +178,20 @@ export function LeaguesManager() {
         return;
       }
 
+      const shareUrl = botUrl
+        ? `https://t.me/share/url?url=${encodeURIComponent(botUrl)}&text=${encodeURIComponent(text)}`
+        : `https://t.me/share/url?text=${encodeURIComponent(text)}`;
+      const telegramWebApp = window.Telegram?.WebApp as { openTelegramLink?: (url: string) => void } | undefined;
+      if (telegramWebApp?.openTelegramLink) {
+        telegramWebApp.openTelegramLink(shareUrl);
+        setMessage(botUrl ? shareFallback : shareTextOnlyFallback);
+        return;
+      }
+
       if (!botUrl) {
         await navigator.clipboard.writeText(text);
         setMessage(shareCopiedFallback);
         return;
-      }
-
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(botUrl)}&text=${encodeURIComponent(text)}`;
-      const telegramWebApp = window.Telegram?.WebApp as { openTelegramLink?: (url: string) => void } | undefined;
-      if (telegramWebApp?.openTelegramLink) {
-        telegramWebApp.openTelegramLink(shareUrl);
       } else {
         window.open(shareUrl, "_blank", "noopener,noreferrer");
       }
