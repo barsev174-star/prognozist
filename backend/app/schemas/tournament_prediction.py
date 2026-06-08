@@ -64,6 +64,36 @@ class TournamentPredictionResultRead(BaseModel):
     updated_at: datetime
 
 
+class TournamentPredictionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    question_id: int
+    user_id: int
+    selected_option_id: int | None
+    free_text: str | None
+    points_awarded: int | None
+    resolved_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class TournamentPredictionAnswerCreate(BaseModel):
+    selected_option_id: int | None = None
+    free_text: str | None = None
+
+
+class TournamentPredictionResolve(BaseModel):
+    correct_option_id: int | None = None
+    correct_text: str | None = None
+
+
+class TournamentPredictionResolutionSummaryRead(BaseModel):
+    total_predictions: int
+    correct_predictions: int
+    total_points_awarded: int
+
+
 class TournamentPredictionQuestionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -79,5 +109,10 @@ class TournamentPredictionQuestionRead(BaseModel):
     resolved_at: datetime | None
     options: list[TournamentPredictionOptionRead] = Field(default_factory=list)
     result: TournamentPredictionResultRead | None = None
+    resolution_summary: TournamentPredictionResolutionSummaryRead | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class TournamentPredictionQuestionWithUserRead(TournamentPredictionQuestionRead):
+    user_prediction: TournamentPredictionRead | None = None

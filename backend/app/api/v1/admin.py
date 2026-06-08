@@ -40,6 +40,7 @@ from app.schemas.tournament import (
 from app.schemas.tournament_prediction import (
     TournamentPredictionOptionCreate,
     TournamentPredictionOptionRead,
+    TournamentPredictionResolve,
     TournamentPredictionOptionUpdate,
     TournamentPredictionQuestionCreate,
     TournamentPredictionQuestionRead,
@@ -55,6 +56,10 @@ from app.services.autoposting import (
 )
 from app.services.scoring import score_completed_match
 from app.services.tournaments import complete_tournament, get_completion_readiness
+from app.services.tournament_predictions import (
+    build_tournament_prediction_resolution_summary,
+    resolve_tournament_prediction_question,
+)
 from app.services.vip import activate_vip_subscription
 
 router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(get_current_admin)])
@@ -271,7 +276,7 @@ def list_admin_tournament_prediction_questions(
     if db.get(Tournament, tournament_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament not found")
 
-    return list(
+    questions = list(
         db.scalars(
             select(TournamentPredictionQuestion)
             .options(
@@ -282,6 +287,10 @@ def list_admin_tournament_prediction_questions(
             .order_by(TournamentPredictionQuestion.lock_at.asc(), TournamentPredictionQuestion.id.asc())
         )
     )
+    for question in questions:
+        if question.status == TournamentPredictionQuestionStatus.resolved or question.result is not None:
+            setattr(question, "resolution_summary", build_tournament_prediction_resolution_summary(db, question.id))
+    return questions
 
 
 @router.post(
@@ -369,6 +378,59 @@ def update_tournament_prediction_option(
     db.commit()
     db.refresh(option)
     return option
+
+
+@router.post(
+    "/tournament-prediction-questions/{question_id}/resolve",
+    response_model=TournamentPredictionQuestionRead,
+)
+def resolve_tournament_prediction_question_endpoint(
+    question_id: int,
+    payload: TournamentPredictionResolve,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+) -> TournamentPredictionQuestion:
+    question = db.scalar(
+        select(TournamentPredictionQuestion)
+        .options(
+            sa.orm.selectinload(TournamentPredictionQuestion.options).selectinload(TournamentPredictionOption.team),
+            sa.orm.selectinload(TournamentPredictionQuestion.result),
+        )
+        .where(TournamentPredictionQuestion.id == question_id)
+    )
+    if question is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction question not found")
+
+    resolve_tournament_prediction_question(
+        db=db,
+        question=question,
+        payload=payload,
+        resolved_by_user_id=current_admin.id,
+    )
+    add_system_log(
+        db,
+        "admin_tournament_prediction_resolved",
+        user=current_admin,
+        payload={
+            "question_id": question.id,
+            "correct_option_id": payload.correct_option_id,
+            "correct_text": payload.correct_text,
+        },
+    )
+    db.commit()
+
+    refreshed = db.scalar(
+        select(TournamentPredictionQuestion)
+        .options(
+            sa.orm.selectinload(TournamentPredictionQuestion.options).selectinload(TournamentPredictionOption.team),
+            sa.orm.selectinload(TournamentPredictionQuestion.result),
+        )
+        .where(TournamentPredictionQuestion.id == question_id)
+    )
+    if refreshed is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction question not found")
+    setattr(refreshed, "resolution_summary", build_tournament_prediction_resolution_summary(db, refreshed.id))
+    return refreshed
 
 
 @router.get("/tournaments/{tournament_id}/completion-readiness", response_model=TournamentCompletionReadinessRead)

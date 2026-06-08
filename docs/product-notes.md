@@ -105,6 +105,7 @@ Why:
 - fixed donation amounts
 - custom donation amount
 - backend donation persistence and logging
+- Mini App can now reopen the saved VIP private-channel invite link for an active subscriber when the link exists.
 
 ### Still needed
 
@@ -119,24 +120,42 @@ Current value framing:
 
 - one VIP question per match;
 - extra points for correct VIP answers;
-- future/optional VIP channel distribution.
+- private VIP channel distribution with invite-link recovery inside the Mini App.
 
 Still important:
 
-- finish VIP channel/community decision and setup;
-- verify invite/publication flows when that channel is enabled.
+- verify the real production channel path end to end:
+  - bot creates invite links;
+  - bot can publish into the channel;
+  - active VIP user can reopen the stored invite link later from the Mini App.
 
 ## Leagues Notes
 
 Leagues are promising, but still feel semi-admin in one crucial place:
 
-- creation still requires raw `tournament_id`.
+- joining still requires manual copy/paste of the invite code.
 
-This is one of the biggest UX blockers before broader player onboarding.
+This is still a UX rough edge before broader player onboarding.
 
 Desired fix:
 
-- tournament selection by name, not raw id.
+- add a cleaner share flow for the invite code from the Mini App.
+
+## Tournament Prediction Notes
+
+Long-term tournament predictions now have a usable product loop:
+
+- admin can create and edit tournament-wide questions;
+- players can answer them in the Mini App;
+- admin can resolve a question and trigger one-shot scoring;
+- admin sees a quick summary after scoring:
+  - how many users guessed correctly;
+  - how many total points were awarded;
+- player sees personal awarded points on resolved tournament questions.
+
+Next useful improvement:
+
+- add per-question answer analytics/history if moderation or audit needs grow later.
 
 ## Teams / Tournament Data Notes
 

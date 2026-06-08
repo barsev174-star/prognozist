@@ -88,3 +88,23 @@ def test_confirm_vip_payment_endpoint_reuses_existing_subscription() -> None:
     assert first_response.is_active is True
     assert second_response.is_active is True
     assert len(subscriptions) == 1
+
+
+def test_get_vip_status_returns_latest_invite_link() -> None:
+    db = create_test_session()
+    user = create_user(db, telegram_id=777)
+    activate_vip_subscription(
+        db=db,
+        user=user,
+        telegram_payment_charge_id="vip-charge-3",
+        stars_amount=100,
+        duration_days=30,
+        invite_link="https://t.me/+vip-latest",
+    )
+    db.commit()
+    db.refresh(user)
+
+    response = vip.get_vip_status(db=db, current_user=user)
+
+    assert response.is_active is True
+    assert response.invite_link == "https://t.me/+vip-latest"

@@ -31,6 +31,11 @@ type OptionDraft = {
   sort_order: string;
 };
 
+type ResolveDraft = {
+  correct_option_id: string;
+  correct_text: string;
+};
+
 const defaultQuestionDraft: QuestionDraft = {
   id: null,
   code: "winner",
@@ -49,6 +54,11 @@ const defaultOptionDraft: OptionDraft = {
   sort_order: "1",
 };
 
+const defaultResolveDraft: ResolveDraft = {
+  correct_option_id: "",
+  correct_text: "",
+};
+
 export function TournamentPredictionsAdmin() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -56,6 +66,7 @@ export function TournamentPredictionsAdmin() {
   const [selectedTournamentId, setSelectedTournamentId] = useState("");
   const [questionDraft, setQuestionDraft] = useState<QuestionDraft>(defaultQuestionDraft);
   const [optionDrafts, setOptionDrafts] = useState<Record<number, OptionDraft>>({});
+  const [resolveDrafts, setResolveDrafts] = useState<Record<number, ResolveDraft>>({});
   const [message, setMessage] = useState<string | null>(null);
 
   const selectedTournament = useMemo(
@@ -90,6 +101,17 @@ export function TournamentPredictionsAdmin() {
           {
             ...defaultOptionDraft,
             sort_order: String(question.options.length + 1),
+          },
+        ]),
+      ),
+    );
+    setResolveDrafts(
+      Object.fromEntries(
+        rows.map((question) => [
+          question.id,
+          {
+            correct_option_id: question.result?.correct_option_id ? String(question.result.correct_option_id) : "",
+            correct_text: question.result?.correct_text ?? "",
           },
         ]),
       ),
@@ -197,6 +219,37 @@ export function TournamentPredictionsAdmin() {
     }));
   }
 
+  function updateResolveDraft(questionId: number, patch: Partial<ResolveDraft>) {
+    setResolveDrafts((current) => ({
+      ...current,
+      [questionId]: {
+        ...(current[questionId] ?? defaultResolveDraft),
+        ...patch,
+      },
+    }));
+  }
+
+  async function resolveQuestion(question: TournamentPredictionQuestion) {
+    const draft = resolveDrafts[question.id] ?? defaultResolveDraft;
+    const payload = {
+      correct_option_id: draft.correct_option_id ? Number(draft.correct_option_id) : null,
+      correct_text: draft.correct_text.trim() || null,
+    };
+
+    try {
+      const resolved = await apiPost<TournamentPredictionQuestion>(`/admin/tournament-prediction-questions/${question.id}/resolve`, payload);
+      const summary = resolved.resolution_summary;
+      setMessage(
+        summary
+          ? `Вопрос "${question.title}" рассчитан. Угадали: ${summary.correct_predictions}/${summary.total_predictions}, роздано очков: ${summary.total_points_awarded}.`
+          : `Вопрос "${question.title}" рассчитан, баллы начислены.`,
+      );
+      await loadQuestions(selectedTournamentId);
+    } catch {
+      setMessage("Не удалось завершить вопрос и начислить баллы. Проверьте статус вопроса и правильный ответ.");
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <section className="rounded-lg bg-white p-4 shadow-sm">
@@ -273,6 +326,7 @@ export function TournamentPredictionsAdmin() {
         ) : (
           questions.map((question) => {
             const optionDraft = optionDrafts[question.id] ?? defaultOptionDraft;
+            const resolveDraft = resolveDrafts[question.id] ?? defaultResolveDraft;
             return (
               <article key={question.id} className="grid gap-4 rounded-lg bg-white p-4 shadow-sm lg:grid-cols-[1.2fr_0.8fr]">
                 <div className="flex flex-col gap-3">
@@ -290,6 +344,71 @@ export function TournamentPredictionsAdmin() {
                     <button type="button" className="rounded-md border border-black/10 px-3 py-2 text-sm font-medium" onClick={() => startEditQuestion(question)}>
                       Редактировать вопрос
                     </button>
+                  </div>
+
+                  <div className="rounded-md border border-black/5 bg-surface p-3">
+                    <div className="text-sm font-medium">Правильный ответ и начисление</div>
+                    <div className="mt-3 flex flex-col gap-3">
+                      {question.options.length > 0 ? (
+                        <AdminField label="Верный вариант">
+                          <select
+                            className={inputClassName}
+                            value={resolveDraft.correct_option_id}
+                            onChange={(event) =>
+                              updateResolveDraft(question.id, {
+                                correct_option_id: event.target.value,
+                                correct_text:
+                                  question.options.find((option) => String(option.id) === event.target.value)?.label ?? resolveDraft.correct_text,
+                              })
+                            }
+                          >
+                            <option value="">Выберите правильный вариант</option>
+                            {question.options
+                              .slice()
+                              .sort((left, right) => left.sort_order - right.sort_order || left.id - right.id)
+                              .map((option) => (
+                                <option key={option.id} value={option.id}>
+                                  {option.label}
+                                </option>
+                              ))}
+                          </select>
+                        </AdminField>
+                      ) : (
+                        <AdminField label="Правильный текст">
+                          <input
+                            className={inputClassName}
+                            value={resolveDraft.correct_text}
+                            onChange={(event) => updateResolveDraft(question.id, { correct_text: event.target.value })}
+                          />
+                        </AdminField>
+                      )}
+                      {question.result ? (
+                        <div className="text-xs text-muted">
+                          Уже рассчитан: {question.result.correct_text ?? "без текста"}.
+                        </div>
+                      ) : null}
+                      {question.resolution_summary ? (
+                        <div className="rounded-md bg-white px-3 py-2 text-xs text-muted">
+                          \u0423\u0433\u0430\u0434\u0430\u043b\u0438: {question.resolution_summary.correct_predictions}/{question.resolution_summary.total_predictions}
+                          {" \u00b7 "}\u0420\u043e\u0437\u0434\u0430\u043d\u043e \u043e\u0447\u043a\u043e\u0432: {question.resolution_summary.total_points_awarded}
+                        </div>
+                      ) : null}
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-white disabled:bg-slate-300"
+                          disabled={
+                            question.status === "resolved" ||
+                            question.status === "draft" ||
+                            question.status === "cancelled" ||
+                            (question.options.length > 0 ? !resolveDraft.correct_option_id : !resolveDraft.correct_text.trim())
+                          }
+                          onClick={() => resolveQuestion(question)}
+                        >
+                          Завершить вопрос и начислить баллы
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2">

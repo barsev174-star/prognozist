@@ -11,6 +11,15 @@ export type UserProfile = {
   created_at: string;
 };
 
+export type VipStatus = {
+  is_active: boolean;
+  premium_until: string | null;
+  stars_amount: number;
+  duration_days: number;
+  invite_link: string | null;
+  channel_enabled: boolean;
+};
+
 export type AuthResponse = {
   access_token: string;
   token_type: "bearer";
@@ -180,6 +189,24 @@ export type TournamentPredictionResult = {
   updated_at: string;
 };
 
+export type TournamentPredictionResolutionSummary = {
+  total_predictions: number;
+  correct_predictions: number;
+  total_points_awarded: number;
+};
+
+export type TournamentPrediction = {
+  id: number;
+  question_id: number;
+  user_id: number;
+  selected_option_id: number | null;
+  free_text: string | null;
+  points_awarded: number | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type TournamentPredictionQuestion = {
   id: number;
   tournament_id: number;
@@ -193,8 +220,13 @@ export type TournamentPredictionQuestion = {
   resolved_at: string | null;
   options: TournamentPredictionOption[];
   result: TournamentPredictionResult | null;
+  resolution_summary: TournamentPredictionResolutionSummary | null;
   created_at: string;
   updated_at: string;
+};
+
+export type TournamentPredictionQuestionWithUserPrediction = TournamentPredictionQuestion & {
+  user_prediction: TournamentPrediction | null;
 };
 
 export type AdminSystemLog = {

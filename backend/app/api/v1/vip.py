@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models import User
+from app.models.vip import VipSubscription
 from app.schemas.vip import (
     VipInvoiceResponse,
     VipPaymentConfirmRequest,
@@ -18,12 +19,24 @@ router = APIRouter(prefix="/vip", tags=["VIP"])
 
 
 @router.get("/status", response_model=VipStatusResponse)
-def get_vip_status(current_user: User = Depends(get_current_user)) -> VipStatusResponse:
+def get_vip_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> VipStatusResponse:
+    is_active = has_active_vip(current_user)
+    latest_subscription = db.scalar(
+        select(VipSubscription)
+        .where(VipSubscription.user_id == current_user.id)
+        .order_by(VipSubscription.created_at.desc(), VipSubscription.id.desc())
+        .limit(1)
+    )
     return VipStatusResponse(
-        is_active=has_active_vip(current_user),
+        is_active=is_active,
         premium_until=current_user.premium_until,
         stars_amount=settings.vip_stars_amount,
         duration_days=settings.vip_default_duration_days,
+        invite_link=latest_subscription.invite_link if is_active and latest_subscription is not None else None,
+        channel_enabled=bool(settings.telegram_vip_channel_id),
     )
 
 

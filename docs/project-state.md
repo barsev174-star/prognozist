@@ -140,6 +140,11 @@ Known recent service-clone history before this design batch:
 - backend tests were added for donation and VIP payment scenarios;
 - backup/restore/health/retention scripts were added for production operations;
 - production operations docs were added.
+- tournament prediction questions can now be:
+  - created in admin;
+  - filled with answer options;
+  - resolved with one-shot scoring and `PointsLog` writes;
+  - shown with a short scoring summary after resolution.
 
 ### Frontend And UX
 
@@ -159,6 +164,11 @@ Known recent service-clone history before this design batch:
   - better hero blocks
   - stronger information hierarchy
   - more intentional "sports app" atmosphere
+- tournament flow was extended:
+  - public tournaments screen exists;
+  - players can answer long-term tournament questions;
+  - resolved tournament questions now show personal awarded points;
+- VIP page now restores access to the saved private-channel invite link from inside the Mini App when a link exists.
 
 ### Important Frontend Bug Found During Polish
 
@@ -187,7 +197,6 @@ Estimated readiness:
 Why it is not higher yet:
 
 - payment flow still needs final donation end-to-end validation;
-- leagues still rely on manual `tournament_id` entry;
 - there is still remaining mojibake in some non-player/admin/bot areas;
 - monitoring is still lightweight;
 - broader real-user manual testing is still needed.
@@ -206,15 +215,15 @@ Focus:
 
 ### 2. Leagues UX
 
-Current issue:
+Current player flow:
 
-- league creation still asks the player/admin to manually enter `tournament_id`.
+- league creation already uses tournament selection by name;
+- league join works by invite code shown on the league card.
 
 Next improvement:
 
-- add tournament list endpoint or reuse existing data source;
-- replace free-text tournament id with a proper select;
-- show tournament names instead of raw ids.
+- add one-tap share for the invite code from the Mini App;
+- optionally build a Telegram deep-link/share helper around the invite code.
 
 ### 3. Teams / World Cup 2026 Data
 
@@ -235,6 +244,7 @@ Still needed:
 - donation end-to-end test in production;
 - confirm logging/idempotency behavior after real donation;
 - decide whether donation analytics should remain logs-only or get a fuller admin view later.
+- finish real VIP-channel smoke test with a configured production channel and bot admin rights.
 
 ### 5. Operations
 
