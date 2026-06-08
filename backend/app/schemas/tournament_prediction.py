@@ -35,6 +35,22 @@ class TournamentPredictionQuestionCreate(BaseModel):
     lock_at: datetime | None = None
 
 
+class TournamentPredictionQuestionUpdate(BaseModel):
+    code: str | None = Field(default=None, min_length=1, max_length=128)
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    option_type: TournamentPredictionOptionType | None = None
+    status: TournamentPredictionQuestionStatus | None = None
+    points: int | None = Field(default=None, ge=0)
+    lock_at: datetime | None = None
+
+
+class TournamentPredictionOptionUpdate(BaseModel):
+    team_id: int | None = None
+    label: str | None = Field(default=None, min_length=1, max_length=255)
+    sort_order: int | None = None
+
+
 class TournamentPredictionResultRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

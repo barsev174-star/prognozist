@@ -40,8 +40,10 @@ from app.schemas.tournament import (
 from app.schemas.tournament_prediction import (
     TournamentPredictionOptionCreate,
     TournamentPredictionOptionRead,
+    TournamentPredictionOptionUpdate,
     TournamentPredictionQuestionCreate,
     TournamentPredictionQuestionRead,
+    TournamentPredictionQuestionUpdate,
 )
 from app.schemas.user import UserAdminUpdate, UserGrantVipRequest, UserProfile
 from app.services.autoposting import (
@@ -302,6 +304,27 @@ def create_tournament_prediction_question(
     return question
 
 
+@router.patch(
+    "/tournament-prediction-questions/{question_id}",
+    response_model=TournamentPredictionQuestionRead,
+)
+def update_tournament_prediction_question(
+    question_id: int,
+    payload: TournamentPredictionQuestionUpdate,
+    db: Session = Depends(get_db),
+) -> TournamentPredictionQuestion:
+    question = db.get(TournamentPredictionQuestion, question_id)
+    if question is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction question not found")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(question, field, value)
+
+    db.commit()
+    db.refresh(question)
+    return question
+
+
 @router.post(
     "/tournament-prediction-questions/{question_id}/options",
     response_model=TournamentPredictionOptionRead,
@@ -320,6 +343,29 @@ def create_tournament_prediction_option(
 
     option = TournamentPredictionOption(question_id=question_id, **payload.model_dump())
     db.add(option)
+    db.commit()
+    db.refresh(option)
+    return option
+
+
+@router.patch(
+    "/tournament-prediction-options/{option_id}",
+    response_model=TournamentPredictionOptionRead,
+)
+def update_tournament_prediction_option(
+    option_id: int,
+    payload: TournamentPredictionOptionUpdate,
+    db: Session = Depends(get_db),
+) -> TournamentPredictionOption:
+    option = db.get(TournamentPredictionOption, option_id)
+    if option is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tournament prediction option not found")
+    if payload.team_id is not None and db.get(Team, payload.team_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(option, field, value)
+
     db.commit()
     db.refresh(option)
     return option

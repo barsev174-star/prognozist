@@ -158,6 +158,45 @@ export type Team = {
   updated_at: string;
 };
 
+export type TournamentPredictionOption = {
+  id: number;
+  question_id: number;
+  team_id: number | null;
+  label: string;
+  sort_order: number;
+  team: Team | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentPredictionResult = {
+  id: number;
+  question_id: number;
+  correct_option_id: number | null;
+  correct_text: string | null;
+  resolved_by_user_id: number | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentPredictionQuestion = {
+  id: number;
+  tournament_id: number;
+  code: string;
+  title: string;
+  description: string | null;
+  option_type: "team" | "player" | "custom";
+  status: "draft" | "active" | "locked" | "resolved" | "cancelled";
+  points: number;
+  lock_at: string | null;
+  resolved_at: string | null;
+  options: TournamentPredictionOption[];
+  result: TournamentPredictionResult | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AdminSystemLog = {
   id: number;
   event_type: string;
