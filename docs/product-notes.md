@@ -153,6 +153,7 @@ What already exists:
 - Mini App share button for league invites
 - Mini App copy button for invite code
 - in-league ranking block inside each league card
+- safe local fallback: if frontend bot username is not configured, share no longer opens the raw web app URL and falls back to copied invite text instead
 
 Implementation note:
 
@@ -226,6 +227,7 @@ What exists:
 - ranking / leagues / referrals buttons now reopen Mini App directly in the relevant section
 - support button now answers instead of staying dead
 - Telegram menu button can now be pinned to the Mini App from the bot process
+- direct section entry now can restore Telegram auth instead of depending on the home page to create the session token
 
 What is still weak:
 

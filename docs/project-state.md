@@ -152,6 +152,7 @@ Known recent service-clone history before this design batch:
 - VIP page, rankings, and home structure were improved;
 - leagues now have one-tap share and copy actions for invite flow;
 - league cards now render the in-league ranking directly in the Mini App;
+- direct entry into player sections now restores Telegram auth instead of assuming the home page was opened first;
 - release polish pass started for key player-facing screens:
   - home
   - matches list
@@ -241,6 +242,7 @@ Current state:
 What should happen next:
 
 - verify the new section-specific entry points on real Telegram clients;
+- verify the local share flow when `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` is absent, because it now falls back to copying invite text instead of opening the raw web URL;
 - consider start-param/deep-link routing later if league/referral onboarding needs to be even shorter.
 
 Important product constraint:
