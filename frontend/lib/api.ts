@@ -142,6 +142,22 @@ export type Tournament = {
   updated_at: string;
 };
 
+export type Team = {
+  id: number;
+  slug: string;
+  name: string;
+  short_name: string | null;
+  fifa_code: string | null;
+  flag_emoji: string | null;
+  logo_url: string | null;
+  confederation: string;
+  status: string;
+  is_national_team: boolean;
+  is_placeholder: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AdminSystemLog = {
   id: number;
   event_type: string;

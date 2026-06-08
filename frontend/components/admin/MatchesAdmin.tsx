@@ -4,11 +4,9 @@ import { useEffect, useState } from "react";
 
 import { AdminField, inputClassName } from "@/components/admin/AdminField";
 import { TeamLogo } from "@/components/TeamLogo";
-import { apiGet, apiPost, type Match, type Question } from "@/lib/api";
+import { apiGet, apiPost, type Match, type Question, type Team, type Tournament } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta } from "@/lib/matchStatus";
-import { worldCupTeams, type WorldCupTeam } from "@/lib/worldCupTeams";
 
-type Tournament = { id: number; name: string };
 type MatchQuestions = {
   public_questions: Question[];
   public_question: Question | null;
@@ -17,6 +15,8 @@ type MatchQuestions = {
 
 type MatchForm = {
   tournament_id: string;
+  team_1_id: string;
+  team_2_id: string;
   team_1: string;
   team_2: string;
   team_1_logo: string;
@@ -27,10 +27,13 @@ type MatchForm = {
 
 export function MatchesAdmin() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<MatchQuestions | null>(null);
   const [form, setForm] = useState<MatchForm>({
     tournament_id: "",
+    team_1_id: "",
+    team_2_id: "",
     team_1: "",
     team_2: "",
     team_1_logo: "",
@@ -51,11 +54,13 @@ export function MatchesAdmin() {
   const isSelectedResultCompleted = selectedResultMatch?.status === "completed";
 
   async function load() {
-    const [tournamentRows, matchRows] = await Promise.all([
+    const [tournamentRows, teamRows, matchRows] = await Promise.all([
       apiGet<Tournament[]>("/admin/tournaments"),
+      apiGet<Team[]>("/admin/teams"),
       apiGet<Match[]>("/admin/matches"),
     ]);
     setTournaments(tournamentRows);
+    setTeams(teamRows);
     setMatches(matchRows);
     if (!form.tournament_id && tournamentRows[0]) {
       setForm((current) => ({ ...current, tournament_id: String(tournamentRows[0].id) }));
@@ -92,11 +97,12 @@ export function MatchesAdmin() {
     loadQuestions(resultForm.match_id).catch(() => setSelectedQuestions(null));
   }, [resultForm.match_id]);
 
-  function applyTeam(side: 1 | 2, team: WorldCupTeam) {
+  function applyTeam(side: 1 | 2, team: Team) {
     setForm((current) => ({
       ...current,
+      [`team_${side}_id`]: String(team.id),
       [`team_${side}`]: team.name,
-      [`team_${side}_logo`]: team.logo,
+      [`team_${side}_logo`]: team.logo_url || team.flag_emoji || "",
     }));
   }
 
@@ -108,15 +114,25 @@ export function MatchesAdmin() {
       await apiPost<Match>("/admin/matches", {
         ...form,
         tournament_id: Number(form.tournament_id),
+        team_1_id: form.team_1_id ? Number(form.team_1_id) : null,
+        team_2_id: form.team_2_id ? Number(form.team_2_id) : null,
         team_1_logo: form.team_1_logo || null,
         team_2_logo: form.team_2_logo || null,
         start_time: new Date(form.start_time).toISOString(),
       });
-      setForm({ ...form, team_1: "", team_2: "", team_1_logo: "", team_2_logo: "" });
+      setForm({
+        ...form,
+        team_1_id: "",
+        team_2_id: "",
+        team_1: "",
+        team_2: "",
+        team_1_logo: "",
+        team_2_logo: "",
+      });
       setMessage("Матч создан.");
       await load();
     } catch {
-      setMessage("Не удалось создать матч. Проверьте, что выбран турнир, команды заполнены, и выполнен вход в админку.");
+      setMessage("Не удалось создать матч. Проверьте турнир, команды и вход в админку.");
     }
   }
 
@@ -157,18 +173,22 @@ export function MatchesAdmin() {
 
         <TeamSelect
           title="Команда 1"
+          teams={teams}
+          selectedTeamId={form.team_1_id}
           name={form.team_1}
           logo={form.team_1_logo}
           onPresetSelect={(team) => applyTeam(1, team)}
-          onNameChange={(team_1) => setForm({ ...form, team_1 })}
+          onNameChange={(team_1) => setForm({ ...form, team_1_id: "", team_1 })}
           onLogoChange={(team_1_logo) => setForm({ ...form, team_1_logo })}
         />
         <TeamSelect
           title="Команда 2"
+          teams={teams}
+          selectedTeamId={form.team_2_id}
           name={form.team_2}
           logo={form.team_2_logo}
           onPresetSelect={(team) => applyTeam(2, team)}
-          onNameChange={(team_2) => setForm({ ...form, team_2 })}
+          onNameChange={(team_2) => setForm({ ...form, team_2_id: "", team_2 })}
           onLogoChange={(team_2_logo) => setForm({ ...form, team_2_logo })}
         />
 
@@ -291,6 +311,8 @@ export function MatchesAdmin() {
 
 function TeamSelect({
   title,
+  teams,
+  selectedTeamId,
   name,
   logo,
   onPresetSelect,
@@ -298,9 +320,11 @@ function TeamSelect({
   onLogoChange,
 }: {
   title: string;
+  teams: Team[];
+  selectedTeamId: string;
   name: string;
   logo: string;
-  onPresetSelect: (team: WorldCupTeam) => void;
+  onPresetSelect: (team: Team) => void;
   onNameChange: (value: string) => void;
   onLogoChange: (value: string) => void;
 }) {
@@ -310,21 +334,21 @@ function TeamSelect({
         <TeamLogo logo={logo} name={name || title} />
         <div className="text-sm font-medium">{title}</div>
       </div>
-      <AdminField label="Выбрать из ЧМ-2026">
+      <AdminField label="Выбрать из базы команд">
         <select
           className={inputClassName}
-          value={worldCupTeams.some((team) => team.name === name) ? name : ""}
+          value={selectedTeamId}
           onChange={(event) => {
-            const team = worldCupTeams.find((item) => item.name === event.target.value);
+            const team = teams.find((item) => String(item.id) === event.target.value);
             if (team) {
               onPresetSelect(team);
             }
           }}
         >
           <option value="">Выберите команду</option>
-          {worldCupTeams.map((team) => (
-            <option key={`${team.confederation}-${team.name}`} value={team.name}>
-              {team.logo} {team.name} · {team.confederation}
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>
+              {(team.flag_emoji ?? team.logo_url ?? "")} {team.name} · {(team.fifa_code ?? team.confederation).toUpperCase()}
             </option>
           ))}
         </select>
