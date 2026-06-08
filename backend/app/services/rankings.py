@@ -75,23 +75,35 @@ def build_points_log_ranking(
 ) -> RankingResponse:
     user_points = tournament_points_query(tournament_ids).subquery()
 
-    query = (
-        select(
-            User.id,
-            User.telegram_id,
-            User.username,
-            User.first_name,
-            func.coalesce(user_points.c.points, 0).label("points"),
-        )
-        .join(user_points, user_points.c.user_id == User.id)
-        .where(User.is_blocked.is_(False))
-        .order_by(user_points.c.points.desc(), User.id.asc())
-    )
-
     if league_id is not None:
-        query = query.join(
-            LeagueMember,
-            (LeagueMember.user_id == User.id) & (LeagueMember.league_id == league_id),
+        query = (
+            select(
+                User.id,
+                User.telegram_id,
+                User.username,
+                User.first_name,
+                func.coalesce(user_points.c.points, 0).label("points"),
+            )
+            .join(
+                LeagueMember,
+                (LeagueMember.user_id == User.id) & (LeagueMember.league_id == league_id),
+            )
+            .outerjoin(user_points, user_points.c.user_id == User.id)
+            .where(User.is_blocked.is_(False))
+            .order_by(func.coalesce(user_points.c.points, 0).desc(), User.id.asc())
+        )
+    else:
+        query = (
+            select(
+                User.id,
+                User.telegram_id,
+                User.username,
+                User.first_name,
+                func.coalesce(user_points.c.points, 0).label("points"),
+            )
+            .join(user_points, user_points.c.user_id == User.id)
+            .where(User.is_blocked.is_(False))
+            .order_by(user_points.c.points.desc(), User.id.asc())
         )
 
     rows = db.execute(query).all()
