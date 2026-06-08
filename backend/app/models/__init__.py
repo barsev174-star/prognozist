@@ -10,7 +10,16 @@ from app.models.question import Question, VipQuestion
 from app.models.referral import Referral, ReferralStatus
 from app.models.result import LeagueResult, TournamentResult
 from app.models.season import Season, SeasonStatus
+from app.models.team import Team, TeamConfederation, TeamStatus
 from app.models.tournament import Tournament, TournamentStatus
+from app.models.tournament_prediction import (
+    TournamentPrediction,
+    TournamentPredictionOption,
+    TournamentPredictionOptionType,
+    TournamentPredictionQuestion,
+    TournamentPredictionQuestionStatus,
+    TournamentPredictionResult,
+)
 from app.models.user import User
 from app.models.vip import VipSubscription, VipSubscriptionStatus
 
@@ -33,7 +42,16 @@ __all__ = [
     "Season",
     "SeasonStatus",
     "SystemLog",
+    "Team",
+    "TeamConfederation",
+    "TeamStatus",
     "Tournament",
+    "TournamentPrediction",
+    "TournamentPredictionOption",
+    "TournamentPredictionOptionType",
+    "TournamentPredictionQuestion",
+    "TournamentPredictionQuestionStatus",
+    "TournamentPredictionResult",
     "TournamentResult",
     "TournamentStatus",
     "User",
