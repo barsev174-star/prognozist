@@ -263,7 +263,7 @@ export function MatchesAdmin() {
           />
         ))}
         {selectedQuestions && selectedQuestions.public_questions.length === 0 && !selectedQuestions.public_question ? (
-          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">Публичные вопросы для выбранного матча не заданы.</div>
+          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">Публичный вопрос для выбранного матча не настроен.</div>
         ) : null}
         <QuestionAnswerField
           label="Правильный ответ VIP-вопроса"
@@ -334,7 +334,7 @@ function TeamSelect({
         <TeamLogo logo={logo} name={name || title} />
         <div className="text-sm font-medium">{title}</div>
       </div>
-      <AdminField label="Выбрать из базы команд">
+      <AdminField label="Выбрать из списка сборных">
         <select
           className={inputClassName}
           value={selectedTeamId}
@@ -348,7 +348,7 @@ function TeamSelect({
           <option value="">Выберите команду</option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>
-              {(team.flag_emoji ?? team.logo_url ?? "")} {team.name} · {(team.fifa_code ?? team.confederation).toUpperCase()}
+              {(team.flag_emoji ?? team.logo_url ?? "")} {team.name} - {(team.fifa_code ?? team.confederation).toUpperCase()}
             </option>
           ))}
         </select>
@@ -356,7 +356,7 @@ function TeamSelect({
       <AdminField label="Название">
         <input className={inputClassName} value={name} onChange={(event) => onNameChange(event.target.value)} />
       </AdminField>
-      <AdminField label="Значок или URL логотипа">
+      <AdminField label="Логотип или URL эмодзи">
         <input className={inputClassName} value={logo} onChange={(event) => onLogoChange(event.target.value)} />
       </AdminField>
     </section>
@@ -380,7 +380,7 @@ function QuestionAnswerField({
     <AdminField label={label}>
       <div className="flex flex-col gap-2">
         <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">
-          {questionText ?? "Вопрос для выбранного матча не задан."}
+          {questionText ?? "Вопрос для выбранного матча еще не задан."}
         </div>
         <select className={inputClassName} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
           <option value="true">Да</option>
@@ -394,12 +394,12 @@ function QuestionAnswerField({
 function formatQuestionReadiness(match: Match): string {
   const publicCount = match.public_questions_count ?? 0;
   const vipReady = Boolean(match.vip_question_exists);
-  return publicCount >= 2 && vipReady ? "вопросы OK" : `вопросы ${publicCount}/2${vipReady ? " + VIP" : ""}`;
+  return publicCount >= 2 && vipReady ? "Вопросы OK" : `Вопросы ${publicCount}/2${vipReady ? " + VIP" : ""}`;
 }
 
 function formatAdminMatchOptionWithStatus(match: Match): string {
   const status = getMatchStatusMeta(match);
-  return `${status.label} · ${formatQuestionReadiness(match)} · ${match.team_1} - ${match.team_2}`;
+  return `${status.label} - ${formatQuestionReadiness(match)} - ${match.team_1} - ${match.team_2}`;
 }
 
 function QuestionReadinessBadge({ match }: { match: Match }) {
@@ -415,7 +415,7 @@ function QuestionReadinessBadge({ match }: { match: Match }) {
           : "inline-flex rounded-md bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800"
       }
     >
-      {isComplete ? "Вопросы заполнены" : `Вопросы: ${publicCount}/2, VIP ${vipReady ? "есть" : "нет"}`}
+      {isComplete ? "Вопросы настроены" : `Вопросы: ${publicCount}/2, VIP ${vipReady ? "есть" : "нет"}`}
     </span>
   );
 }

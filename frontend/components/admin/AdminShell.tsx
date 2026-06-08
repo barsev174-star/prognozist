@@ -7,6 +7,7 @@ import { AdminAccessGate } from "@/components/admin/AdminAccessGate";
 const nav = [
   { href: "/admin/seasons", label: "Сезоны" },
   { href: "/admin/tournaments", label: "Турниры" },
+  { href: "/admin/tournament-predictions", label: "Турнирные прогнозы" },
   { href: "/admin/matches", label: "Матчи" },
   { href: "/admin/questions", label: "Вопросы" },
   { href: "/admin/expert", label: "Эксперт" },

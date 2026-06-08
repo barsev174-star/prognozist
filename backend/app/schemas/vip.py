@@ -8,6 +8,8 @@ class VipStatusResponse(BaseModel):
     premium_until: datetime | None
     stars_amount: int
     duration_days: int
+    invite_link: str | None = None
+    channel_enabled: bool = False
 
 
 class VipInvoiceResponse(BaseModel):

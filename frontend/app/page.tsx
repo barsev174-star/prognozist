@@ -7,6 +7,7 @@ import type { UserProfile } from "@/lib/api";
 
 const sections = [
   { href: "/matches", label: "\u041c\u0430\u0442\u0447\u0438", eyebrow: "\u0418\u0433\u0440\u043e\u0432\u043e\u0439 \u0434\u0435\u043d\u044c" },
+  { href: "/tournaments", label: "\u0422\u0443\u0440\u043d\u0438\u0440\u044b", eyebrow: "\u0414\u043e\u043b\u0433\u0438\u0439 \u043f\u0440\u043e\u0433\u043d\u043e\u0437" },
   { href: "/rankings", label: "\u0420\u0435\u0439\u0442\u0438\u043d\u0433", eyebrow: "\u0422\u0430\u0431\u043b\u0438\u0446\u0430" },
   { href: "/leagues", label: "\u041b\u0438\u0433\u0438", eyebrow: "\u0421\u043e\u043e\u0431\u0449\u0435\u0441\u0442\u0432\u043e" },
   { href: "/profile", label: "\u041f\u0440\u043e\u0444\u0438\u043b\u044c", eyebrow: "\u0410\u043a\u043a\u0430\u0443\u043d\u0442" },

@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
 import { AppHeader } from "@/components/AppHeader";
 import { AuthGate } from "@/components/AuthGate";
-import type { UserProfile } from "@/lib/api";
+import { apiGet, type UserProfile, type VipStatus } from "@/lib/api";
 
 const benefitsTitle = "\u0427\u0442\u043e \u0434\u0430\u0435\u0442 VIP";
 const benefitOne = "\u0414\u043e\u0441\u0442\u0443\u043f \u043a VIP-\u0432\u043e\u043f\u0440\u043e\u0441\u0443 \u0432 \u043a\u0430\u0436\u0434\u043e\u043c \u043c\u0430\u0442\u0447\u0435.";
@@ -19,6 +22,13 @@ const vipOff = "VIP \u043d\u0435 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u043
 const expiredText = "\u041f\u0440\u0435\u0434\u044b\u0434\u0443\u0449\u0438\u0439 VIP-\u0434\u043e\u0441\u0442\u0443\u043f \u0438\u0441\u0442\u0435\u043a. \u0415\u0433\u043e \u043c\u043e\u0436\u043d\u043e \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u044c \u0437\u0430\u043d\u043e\u0432\u043e \u0447\u0435\u0440\u0435\u0437 \u0431\u043e\u0442\u0430.";
 const upsellText =
   "\u0421\u0435\u0439\u0447\u0430\u0441 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u043e\u0431\u044b\u0447\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b \u0438 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b. VIP-\u0432\u043e\u043f\u0440\u043e\u0441\u044b \u0432\u0438\u0434\u043d\u044b, \u043d\u043e \u043e\u0442\u0432\u0435\u0447\u0430\u0442\u044c \u043d\u0430 \u043d\u0438\u0445 \u043c\u043e\u0436\u043d\u043e \u0442\u043e\u043b\u044c\u043a\u043e \u0441 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u043c VIP.";
+const vipChannelTitle = "\u0417\u0430\u043a\u0440\u044b\u0442\u044b\u0439 VIP-\u043a\u0430\u043d\u0430\u043b";
+const vipChannelReady = "\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0430. \u041c\u043e\u0436\u043d\u043e \u0432\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u0432 \u043a\u0430\u043d\u0430\u043b \u0432 \u043b\u044e\u0431\u043e\u0439 \u043c\u043e\u043c\u0435\u043d\u0442.";
+const vipChannelMissingLink =
+  "\u041a\u0430\u043d\u0430\u043b \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d, \u043d\u043e \u043f\u0435\u0440\u0441\u043e\u043d\u0430\u043b\u044c\u043d\u0430\u044f \u0441\u0441\u044b\u043b\u043a\u0430 \u043d\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u043b\u0430\u0441\u044c. \u0415\u0441\u043b\u0438 \u0432 \u0447\u0430\u0442\u0435 \u0431\u043e\u0442\u0430 \u0435\u0435 \u043d\u0435\u0442, \u043d\u0443\u0436\u043d\u043e \u043f\u0435\u0440\u0435\u0432\u044b\u0434\u0430\u0442\u044c \u0434\u043e\u0441\u0442\u0443\u043f.";
+const vipChannelDisabled =
+  "\u0421\u0435\u0439\u0447\u0430\u0441 VIP \u0430\u043a\u0442\u0438\u0432\u0435\u043d, \u043d\u043e \u0437\u0430\u043a\u0440\u044b\u0442\u044b\u0439 \u043a\u0430\u043d\u0430\u043b \u0435\u0449\u0435 \u043d\u0435 \u0434\u043e\u0432\u0435\u0434\u0435\u043d \u0434\u043e \u043f\u0440\u043e\u0434-\u0441\u0445\u0435\u043c\u044b.";
+const vipChannelButton = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043a\u0430\u043d\u0430\u043b";
 
 export default function VipPage() {
   return (
@@ -55,6 +65,7 @@ export default function VipPage() {
 }
 
 function VipStatus({ user }: { user: UserProfile }) {
+  const [vipStatus, setVipStatus] = useState<VipStatus | null>(null);
   const premiumUntil = user.premium_until ? new Date(user.premium_until) : null;
   const hasVip = premiumUntil !== null && premiumUntil.getTime() > Date.now();
   const formattedDate = premiumUntil
@@ -67,27 +78,53 @@ function VipStatus({ user }: { user: UserProfile }) {
       }).format(premiumUntil)
     : null;
 
-  return (
-    <section className="overflow-hidden rounded-[28px] border border-black/5 bg-[linear-gradient(135deg,#172033_0%,#5b3a00_100%)] p-5 text-white shadow-[0_18px_55px_rgba(23,32,51,0.18)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">{currentStatus}</p>
-          <h1 className="mt-2 text-2xl font-semibold">{hasVip ? vipOn : vipOff}</h1>
-        </div>
-        <span
-          className={
-            hasVip
-              ? "rounded-full bg-white/14 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white"
-              : "rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/78"
-          }
-        >
-          {hasVip ? "VIP" : "Free"}
-        </span>
-      </div>
+  useEffect(() => {
+    apiGet<VipStatus>("/vip/status")
+      .then(setVipStatus)
+      .catch(() => setVipStatus(null));
+  }, []);
 
-      <p className="mt-4 text-sm text-white/78">
-        {hasVip && formattedDate ? `\u0414\u043e\u0441\u0442\u0443\u043f \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442 \u0434\u043e ${formattedDate}.` : premiumUntil ? expiredText : upsellText}
-      </p>
-    </section>
+  return (
+    <div className="flex flex-col gap-4">
+      <section className="overflow-hidden rounded-[28px] border border-black/5 bg-[linear-gradient(135deg,#172033_0%,#5b3a00_100%)] p-5 text-white shadow-[0_18px_55px_rgba(23,32,51,0.18)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">{currentStatus}</p>
+            <h1 className="mt-2 text-2xl font-semibold">{hasVip ? vipOn : vipOff}</h1>
+          </div>
+          <span
+            className={
+              hasVip
+                ? "rounded-full bg-white/14 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white"
+                : "rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white/78"
+            }
+          >
+            {hasVip ? "VIP" : "Free"}
+          </span>
+        </div>
+
+        <p className="mt-4 text-sm text-white/78">
+          {hasVip && formattedDate ? `\u0414\u043e\u0441\u0442\u0443\u043f \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442 \u0434\u043e ${formattedDate}.` : premiumUntil ? expiredText : upsellText}
+        </p>
+      </section>
+
+      {hasVip ? (
+        <section className="rounded-[24px] border border-black/5 bg-white/92 p-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)]">
+          <h2 className="text-base font-semibold">{vipChannelTitle}</h2>
+          <p className="mt-2 text-sm text-muted">
+            {vipStatus?.invite_link
+              ? vipChannelReady
+              : vipStatus?.channel_enabled
+                ? vipChannelMissingLink
+                : vipChannelDisabled}
+          </p>
+          {vipStatus?.invite_link ? (
+            <Link className="mt-4 inline-flex rounded-full bg-ink px-4 py-2 text-sm font-medium text-white" href={vipStatus.invite_link} target="_blank" rel="noreferrer">
+              {vipChannelButton}
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
+    </div>
   );
 }
