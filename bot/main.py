@@ -3,6 +3,7 @@ import logging
 
 from aiohttp import web
 from aiogram import Bot, Dispatcher
+from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 from config import settings
 from handlers import router
@@ -17,6 +18,13 @@ async def main() -> None:
         return
 
     bot = Bot(token=settings.bot_token)
+    if settings.telegram_webapp_url.startswith("https://"):
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="Mini App",
+                web_app=WebAppInfo(url=settings.telegram_webapp_url.rstrip("/")),
+            )
+        )
     dispatcher = Dispatcher()
     dispatcher.include_router(router)
 
