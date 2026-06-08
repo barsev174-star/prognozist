@@ -9,7 +9,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 ENV NEXT_PUBLIC_API_BASE_URL=/api/v1
+ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -19,8 +21,10 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
+ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_BASE_URL=/api/v1
+ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package.json ./package.json

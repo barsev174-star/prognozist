@@ -32,6 +32,8 @@ services:
       context: ./bot
       dockerfile: Dockerfile.prod
     restart: unless-stopped
+    extra_hosts:
+      - "api.telegram.org:149.154.167.220"
     env_file:
       - ${PROD_ENV_FILE:-.env.production}
     depends_on:
@@ -41,6 +43,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}
     restart: unless-stopped
     env_file:
       - ${PROD_ENV_FILE:-.env.production}

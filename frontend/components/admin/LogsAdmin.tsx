@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiGet, type AdminPointsLog, type AdminSystemLog } from "@/lib/api";
 
 type LogTab = "system" | "points";
+type SystemFilter = "all" | "donations";
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("ru-RU", {
@@ -32,6 +33,7 @@ function formatEventType(value: string): string {
     admin_match_completed: "Матч завершен",
     admin_user_updated: "Пользователь изменен",
     admin_vip_granted: "VIP выдан",
+    donation_paid: "Донат оплачен",
   };
 
   return labels[value] ?? value;
@@ -48,8 +50,28 @@ function formatSourceType(value: string): string {
   return labels[value] ?? value;
 }
 
+function formatSystemPayload(log: AdminSystemLog): string {
+  if (!log.payload_json) {
+    return "";
+  }
+
+  if (log.event_type === "donation_paid") {
+    const donationId = log.payload_json["donation_id"];
+    const starsAmount = log.payload_json["stars_amount"];
+    const chargeId = log.payload_json["telegram_payment_charge_id"];
+    return [
+      `donation_id: ${String(donationId ?? "-")}`,
+      `stars_amount: ${String(starsAmount ?? "-")}`,
+      `telegram_payment_charge_id: ${String(chargeId ?? "-")}`,
+    ].join("\n");
+  }
+
+  return JSON.stringify(log.payload_json, null, 2);
+}
+
 export function LogsAdmin() {
   const [tab, setTab] = useState<LogTab>("system");
+  const [systemFilter, setSystemFilter] = useState<SystemFilter>("all");
   const [systemLogs, setSystemLogs] = useState<AdminSystemLog[]>([]);
   const [pointsLogs, setPointsLogs] = useState<AdminPointsLog[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -72,7 +94,17 @@ export function LogsAdmin() {
     load();
   }, []);
 
-  const activeCount = useMemo(() => (tab === "system" ? systemLogs.length : pointsLogs.length), [pointsLogs.length, systemLogs.length, tab]);
+  const filteredSystemLogs = useMemo(
+    () => systemLogs.filter((log) => (systemFilter === "donations" ? log.event_type === "donation_paid" : true)),
+    [systemFilter, systemLogs],
+  );
+
+  const activeCount = useMemo(() => {
+    if (tab === "system") {
+      return filteredSystemLogs.length;
+    }
+    return pointsLogs.length;
+  }, [filteredSystemLogs.length, pointsLogs.length, tab]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,7 +112,7 @@ export function LogsAdmin() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold">Журнал</h2>
-            <p className="mt-1 text-sm text-muted">Последние события админки и начисления очков.</p>
+            <p className="mt-1 text-sm text-muted">Последние события админки, донаты и начисления очков.</p>
           </div>
           <button type="button" onClick={load} className="rounded-md border border-black/10 bg-white px-3 py-2 text-sm font-medium">
             Обновить
@@ -94,6 +126,16 @@ export function LogsAdmin() {
             Очки
           </TabButton>
         </div>
+        {tab === "system" ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <TabButton active={systemFilter === "all"} onClick={() => setSystemFilter("all")}>
+              Все события
+            </TabButton>
+            <TabButton active={systemFilter === "donations"} onClick={() => setSystemFilter("donations")}>
+              Донаты
+            </TabButton>
+          </div>
+        ) : null}
         {message ? <p className="mt-3 text-sm text-red-600">{message}</p> : null}
       </section>
 
@@ -101,7 +143,7 @@ export function LogsAdmin() {
         {activeCount === 0 ? (
           <div className="p-4 text-sm text-muted">Записей пока нет.</div>
         ) : tab === "system" ? (
-          <SystemLogsList logs={systemLogs} />
+          <SystemLogsList logs={filteredSystemLogs} />
         ) : (
           <PointsLogsList logs={pointsLogs} />
         )}
@@ -134,9 +176,7 @@ function SystemLogsList({ logs }: { logs: AdminSystemLog[] }) {
               <span className="text-sm text-muted">{formatUser(log)}</span>
             </div>
             {log.payload_json ? (
-              <pre className="mt-2 overflow-auto rounded-md bg-surface p-3 text-xs text-muted">
-                {JSON.stringify(log.payload_json, null, 2)}
-              </pre>
+              <pre className="mt-2 overflow-auto rounded-md bg-surface p-3 text-xs text-muted">{formatSystemPayload(log)}</pre>
             ) : null}
           </div>
         </article>

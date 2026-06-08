@@ -26,7 +26,7 @@ Run the stack behind one stable public domain with HTTPS:
 4. Fill secrets: `JWT_SECRET`, `BOT_TOKEN`, `BOT_INTERNAL_TOKEN`, `POSTGRES_PASSWORD`.
 5. Set `TELEGRAM_WEBAPP_URL=https://your-domain`.
 6. Set `BACKEND_CORS_ORIGINS=https://your-domain`.
-7. Set `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` to your bot username without `@`.
+7. Set `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` to your bot username without `@`. This value is used at frontend build time.
 8. Start the stack:
 
 ```powershell
@@ -51,6 +51,41 @@ docker compose -f docker-compose.prod.yml --env-file .env.production.example con
 After the domain is live, update the bot's Mini App URL in BotFather to the same HTTPS domain.
 
 For browser admin login, the same bot username is used by the Telegram login widget on `/admin/login`.
+Link the browser login domain in BotFather with `/setdomain`; use the bare domain only, for example `prognozistapp.ru`, without `https://` and without a path.
+
+## Current Production
+
+Current public URL:
+
+```text
+https://prognozistapp.ru
+```
+
+Known-good checks:
+
+```bash
+curl -I https://prognozistapp.ru
+curl https://prognozistapp.ru/api/v1/health
+```
+
+Expected API health response:
+
+```json
+{"status":"ok"}
+```
+
+Admin login URL:
+
+```text
+https://prognozistapp.ru/admin/login
+```
+
+After changing `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`, rebuild frontend because Next.js embeds `NEXT_PUBLIC_*` values during build:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache frontend
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d frontend
+```
 
 ## Notes
 
@@ -58,3 +93,5 @@ For browser admin login, the same bot username is used by the Telegram login wid
 - `NEXT_PUBLIC_API_BASE_URL=/api/v1` keeps frontend and backend under one public domain.
 - Caddy obtains HTTPS certificates automatically after DNS is pointed correctly.
 - Keep ports `80` and `443` open on the server firewall.
+- If the bot starts polling and then times out on `api.telegram.org`, keep the `extra_hosts` IPv4 mapping in `docker-compose.prod.yml` or move to a VPS/network with reliable Telegram API connectivity.
+- For backups, restore steps, and post-deploy smoke checks, see `docs/production-operations.md`.
