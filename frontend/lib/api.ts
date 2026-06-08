@@ -41,6 +41,8 @@ export type Question = {
 export type Match = {
   id: number;
   tournament_id: number;
+  team_1_id?: number | null;
+  team_2_id?: number | null;
   team_1: string;
   team_2: string;
   team_1_logo: string | null;
@@ -124,6 +126,35 @@ export type League = {
   is_member: boolean;
   created_at: string;
   completed_at: string | null;
+  updated_at: string;
+};
+
+export type Tournament = {
+  id: number;
+  season_id: number;
+  name: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  status: string;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Team = {
+  id: number;
+  slug: string;
+  name: string;
+  short_name: string | null;
+  fifa_code: string | null;
+  flag_emoji: string | null;
+  logo_url: string | null;
+  confederation: string;
+  status: string;
+  is_national_team: boolean;
+  is_placeholder: boolean;
+  created_at: string;
   updated_at: string;
 };
 

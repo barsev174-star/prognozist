@@ -8,6 +8,8 @@ from app.schemas.question import QuestionRead
 
 class MatchBase(BaseModel):
     tournament_id: int
+    team_1_id: int | None = None
+    team_2_id: int | None = None
     team_1: str = Field(min_length=1, max_length=255)
     team_2: str = Field(min_length=1, max_length=255)
     team_1_logo: str | None = Field(default=None, max_length=1024)
@@ -22,6 +24,8 @@ class MatchCreate(MatchBase):
 
 class MatchUpdate(BaseModel):
     tournament_id: int | None = None
+    team_1_id: int | None = None
+    team_2_id: int | None = None
     team_1: str | None = Field(default=None, min_length=1, max_length=255)
     team_2: str | None = Field(default=None, min_length=1, max_length=255)
     team_1_logo: str | None = Field(default=None, max_length=1024)

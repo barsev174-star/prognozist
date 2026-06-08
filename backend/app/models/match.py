@@ -27,6 +27,8 @@ class Match(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     tournament_id: Mapped[int] = mapped_column(ForeignKey("tournaments.id", ondelete="CASCADE"), nullable=False)
+    team_1_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="SET NULL"), nullable=True)
+    team_2_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="SET NULL"), nullable=True)
     team_1: Mapped[str] = mapped_column(String(255), nullable=False)
     team_2: Mapped[str] = mapped_column(String(255), nullable=False)
     team_1_logo: Mapped[str | None] = mapped_column(String(1024), nullable=True)
@@ -42,6 +44,8 @@ class Match(TimestampMixin, Base):
     team_2_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     tournament: Mapped["Tournament"] = relationship()
+    team_1_ref: Mapped["Team | None"] = relationship(foreign_keys=[team_1_id])
+    team_2_ref: Mapped["Team | None"] = relationship(foreign_keys=[team_2_id])
     predictions: Mapped[list["Prediction"]] = relationship(back_populates="match", cascade="all, delete-orphan")
     questions: Mapped[list["Question"]] = relationship(back_populates="match", cascade="all, delete-orphan")
     vip_question: Mapped["VipQuestion | None"] = relationship(back_populates="match", cascade="all, delete-orphan")

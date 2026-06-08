@@ -9,7 +9,7 @@ const loadError = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043
 const loadingLabel = "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...";
 const emptyLabel = "\u0420\u0435\u0439\u0442\u0438\u043d\u0433 \u043f\u043e\u043a\u0430 \u043f\u0443\u0441\u0442.";
 const ladderTitle = "\u0411\u043e\u0440\u044c\u0431\u0430 \u0437\u0430 \u043e\u0431\u0449\u0438\u0439 \u0442\u043e\u043f";
-const vipYearLabel = "VIP \u043d\u0430 1 \u0433\u043e\u0434";
+const prizeTbdLabel = "\u0423\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f";
 const currentUserLabel = "\u0412\u044b \u0441\u0435\u0439\u0447\u0430\u0441 \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435";
 const yourPositionLabel = "\u0412\u0430\u0448\u0430 \u043f\u043e\u0437\u0438\u0446\u0438\u044f";
 const pointsLabel = "\u043e\u0447\u043a\u043e\u0432";
@@ -56,9 +56,9 @@ export function RankingsList() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/72">Global ladder</div>
         <h2 className="mt-2 text-2xl font-semibold">{ladderTitle}</h2>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          <PrizeCard place="1" prize="Telegram Premium" />
-          <PrizeCard place="2" prize={vipYearLabel} />
-          <PrizeCard place="3" prize={vipYearLabel} />
+          <PrizeCard place="1" prize={prizeTbdLabel} />
+          <PrizeCard place="2" prize={prizeTbdLabel} />
+          <PrizeCard place="3" prize={prizeTbdLabel} />
         </div>
       </section>
 
