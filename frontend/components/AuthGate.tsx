@@ -29,6 +29,7 @@ export function AuthGate({ children }: AuthGateProps) {
           if (!isMounted) {
             return;
           }
+          sessionStorage.setItem("premium_until_hint", user.premium_until ?? "");
           setState({ status: "ready", user });
           return;
         } catch {
@@ -54,6 +55,7 @@ export function AuthGate({ children }: AuthGateProps) {
             return;
           }
           sessionStorage.setItem("access_token", response.access_token);
+          sessionStorage.setItem("premium_until_hint", response.user.premium_until ?? "");
           setState({ status: "ready", user: response.user });
         })
         .catch(() => {

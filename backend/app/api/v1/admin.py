@@ -21,6 +21,7 @@ from app.models import (
     Tournament,
     TournamentPredictionOption,
     TournamentPredictionQuestion,
+    TournamentPredictionQuestionStatus,
     User,
     VipQuestion,
 )
@@ -29,6 +30,7 @@ from app.schemas.log import AdminPointsLogRead, AdminSystemLogRead
 from app.schemas.match import MatchCreate, MatchQuestionsRead, MatchRead, MatchResultUpdate, MatchUpdate
 from app.schemas.question import QuestionCreate, QuestionRead, QuestionUpdate
 from app.schemas.season import SeasonCreate, SeasonRead, SeasonUpdate
+from app.schemas.star import AdminStarsSummaryRead, AdminStarTransactionRead, StarAmountRead
 from app.schemas.team import TeamCreate, TeamRead
 from app.schemas.tournament import (
     TournamentCompletionReadinessRead,
@@ -56,6 +58,7 @@ from app.services.autoposting import (
 )
 from app.services.scoring import score_completed_match
 from app.services.tournaments import complete_tournament, get_completion_readiness
+from app.services.telegram_bot_api import get_my_star_balance, get_star_transactions
 from app.services.tournament_predictions import (
     build_tournament_prediction_resolution_summary,
     resolve_tournament_prediction_question,
@@ -121,6 +124,23 @@ def list_points_logs(limit: int = 100, db: Session = Depends(get_db)) -> list[Ad
         )
         for log in logs
     ]
+
+
+@router.get("/stars/summary", response_model=AdminStarsSummaryRead)
+def get_admin_stars_summary() -> AdminStarsSummaryRead:
+    try:
+        balance = get_my_star_balance()
+        transactions = get_star_transactions(limit=20)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Telegram Stars summary is unavailable") from exc
+    incoming_total = sum(transaction.amount for transaction in transactions if transaction.amount > 0)
+    outgoing_total = abs(sum(transaction.amount for transaction in transactions if transaction.amount < 0))
+    return AdminStarsSummaryRead(
+        balance=StarAmountRead.model_validate(balance),
+        transactions=[AdminStarTransactionRead.model_validate(transaction) for transaction in transactions],
+        incoming_total=incoming_total,
+        outgoing_total=outgoing_total,
+    )
 
 
 @router.patch("/users/{user_id}", response_model=UserProfile)
