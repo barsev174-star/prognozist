@@ -116,3 +116,9 @@ class TournamentPredictionQuestionRead(BaseModel):
 
 class TournamentPredictionQuestionWithUserRead(TournamentPredictionQuestionRead):
     user_prediction: TournamentPredictionRead | None = None
+
+
+class TournamentPredictionPendingSummaryRead(BaseModel):
+    tournament_id: int
+    pending_questions_count: int
+    total_questions_count: int

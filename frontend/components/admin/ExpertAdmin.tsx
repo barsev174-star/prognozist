@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { AdminField, inputClassName } from "@/components/admin/AdminField";
 import { TeamLogo } from "@/components/TeamLogo";
+import { AdminField, inputClassName } from "@/components/admin/AdminField";
 import { apiGet, apiPatch, apiPost, type Match, type Question } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta } from "@/lib/matchStatus";
 
@@ -34,6 +34,47 @@ type ExpertForm = {
   question_answer: string;
   question_2_answer: string;
   vip_question_answer: string;
+};
+
+const text = {
+  loadMatchesError: "Не удалось загрузить матчи. Проверьте вход в админку.",
+  loadPredictionError: "Не удалось загрузить экспертный прогноз для выбранного матча.",
+  updated: "Прогноз эксперта обновлен.",
+  created: "Прогноз эксперта создан.",
+  saveError: "Не удалось сохранить прогноз. Проверьте счет, выбранный матч и статус публикации.",
+  publishSuccess: "Прогноз опубликован в VIP-канал.",
+  publishErrorFallback: "Не удалось опубликовать прогноз. Проверьте настройки VIP-канала.",
+  title: "Прогноз эксперта",
+  match: "Матч",
+  score1: "Счет 1",
+  score2: "Счет 2",
+  publicAnswer1: "Ответ на публичный вопрос 1",
+  publicAnswer2: "Ответ на публичный вопрос 2",
+  vipAnswer: "Ответ на VIP-вопрос",
+  saveButton: "Сохранить прогноз",
+  createButton: "Создать прогноз",
+  publishButton: "Опубликовать",
+  loading: "Загрузка...",
+  questionsTitle: "Вопросы выбранного матча",
+  previewPublic1: "Публичный вопрос эксперта 1",
+  previewPublic2: "Публичный вопрос эксперта 2",
+  previewVip: "VIP-вопрос",
+  summaryForecast: "Прогноз",
+  summaryStatus: "Статус",
+  summaryPublishedAt: "Публикация",
+  statusPublished: "опубликован",
+  statusDraft: "черновик",
+  statusMissing: "нет",
+  unpublished: "не создан",
+  unpublishedDate: "нет",
+  helper:
+    "После публикации прогноз уходит в VIP-канал. После завершения матча итог и сравнение с прогнозом эксперта отправляются автоматически.",
+  noQuestion: "Вопрос для выбранного матча не задан.",
+  noValue: "Не указывать",
+  yes: "Да",
+  no: "Нет",
+  notSet: "Не задан",
+  pointsSuffix: "балл.",
 };
 
 const emptyForm: ExpertForm = {
@@ -100,12 +141,12 @@ export function ExpertAdmin() {
 
   useEffect(() => {
     loadMatches()
-      .catch(() => setMessage("Не удалось загрузить матчи. Проверьте вход в админку."))
+      .catch(() => setMessage(text.loadMatchesError))
       .finally(() => setIsLoading(false));
   }, []);
 
   useEffect(() => {
-    loadMatchContext(matchId).catch(() => setMessage("Не удалось загрузить экспертный прогноз для выбранного матча."));
+    loadMatchContext(matchId).catch(() => setMessage(text.loadPredictionError));
   }, [matchId]);
 
   async function savePrediction(event: React.FormEvent) {
@@ -127,9 +168,9 @@ export function ExpertAdmin() {
         ? await apiPatch<ExpertPrediction>(`/admin/expert-predictions/${prediction.id}`, payload)
         : await apiPost<ExpertPrediction>("/admin/expert-predictions", payload);
       setPrediction(saved);
-      setMessage(prediction ? "Прогноз эксперта обновлен." : "Прогноз эксперта создан.");
+      setMessage(prediction ? text.updated : text.created);
     } catch {
-      setMessage("Не удалось сохранить прогноз. Проверьте счет, выбранный матч и статус публикации.");
+      setMessage(text.saveError);
     } finally {
       setIsSaving(false);
     }
@@ -145,9 +186,13 @@ export function ExpertAdmin() {
     try {
       const published = await apiPost<ExpertPrediction>(`/admin/expert-predictions/${prediction.id}/publish`);
       setPrediction(published);
-      setMessage("Прогноз опубликован в VIP-канал, если канал настроен.");
-    } catch {
-      setMessage("Не удалось опубликовать прогноз. Проверьте настройки VIP-канала и статус прогноза.");
+      setMessage(text.publishSuccess);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("409")) {
+        setMessage("Не удалось опубликовать прогноз. VIP-канал не настроен или сейчас недоступен.");
+      } else {
+        setMessage(text.publishErrorFallback);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -156,8 +201,12 @@ export function ExpertAdmin() {
   return (
     <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
       <form onSubmit={savePrediction} className="flex flex-col gap-4 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">Прогноз эксперта</h2>
-        <AdminField label="Матч">
+        <div>
+          <h2 className="text-base font-semibold">{text.title}</h2>
+          <p className="mt-1 text-sm text-muted">{text.helper}</p>
+        </div>
+
+        <AdminField label={text.match}>
           <select className={inputClassName} value={matchId} onChange={(event) => setMatchId(event.target.value)}>
             {matches.map((match) => (
               <option key={match.id} value={match.id}>
@@ -168,7 +217,7 @@ export function ExpertAdmin() {
         </AdminField>
 
         <div className="grid grid-cols-2 gap-2">
-          <AdminField label="Счет 1">
+          <AdminField label={text.score1}>
             <input
               type="number"
               min={0}
@@ -178,7 +227,7 @@ export function ExpertAdmin() {
               onChange={(event) => setForm({ ...form, predicted_team_1_score: event.target.value })}
             />
           </AdminField>
-          <AdminField label="Счет 2">
+          <AdminField label={text.score2}>
             <input
               type="number"
               min={0}
@@ -191,21 +240,21 @@ export function ExpertAdmin() {
         </div>
 
         <QuestionAnswerSelect
-          label="Ответ на публичный вопрос 1"
+          label={text.publicAnswer1}
           questionText={firstPublicQuestion?.text}
           value={form.question_answer}
           disabled={prediction?.is_published}
           onChange={(value) => setForm({ ...form, question_answer: value })}
         />
         <QuestionAnswerSelect
-          label="Ответ на публичный вопрос 2"
+          label={text.publicAnswer2}
           questionText={secondPublicQuestion?.text}
           value={form.question_2_answer}
           disabled={prediction?.is_published}
           onChange={(value) => setForm({ ...form, question_2_answer: value })}
         />
         <QuestionAnswerSelect
-          label="Ответ на VIP-вопрос"
+          label={text.vipAnswer}
           questionText={questions?.vip_question?.text}
           value={form.vip_question_answer}
           disabled={prediction?.is_published}
@@ -214,7 +263,7 @@ export function ExpertAdmin() {
 
         <div className="flex flex-wrap items-center gap-3">
           <button disabled={isSaving || !matchId || prediction?.is_published} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-            {prediction ? "Сохранить прогноз" : "Создать прогноз"}
+            {prediction ? text.saveButton : text.createButton}
           </button>
           <button
             type="button"
@@ -222,21 +271,21 @@ export function ExpertAdmin() {
             onClick={publishPrediction}
             className="rounded-md bg-white px-4 py-2 text-sm font-medium shadow-sm disabled:opacity-50"
           >
-            Опубликовать
+            {text.publishButton}
           </button>
         </div>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
       </form>
 
       <section className="rounded-lg bg-white shadow-sm">
-        {isLoading ? <p className="p-4 text-sm text-muted">Загрузка...</p> : null}
+        {isLoading ? <p className="p-4 text-sm text-muted">{text.loading}</p> : null}
         {selectedMatch ? <MatchSummary match={selectedMatch} prediction={prediction} /> : null}
         <div className="border-t border-black/5 p-4">
-          <h3 className="text-sm font-semibold">Вопросы выбранного матча</h3>
+          <h3 className="text-sm font-semibold">{text.questionsTitle}</h3>
           <div className="mt-3 grid gap-3 lg:grid-cols-3">
-            <QuestionPreview title="Публичный вопрос эксперта 1" question={firstPublicQuestion} />
-            <QuestionPreview title="Публичный вопрос эксперта 2" question={secondPublicQuestion} />
-            <QuestionPreview title="VIP-вопрос" question={questions?.vip_question ?? null} />
+            <QuestionPreview title={text.previewPublic1} question={firstPublicQuestion} />
+            <QuestionPreview title={text.previewPublic2} question={secondPublicQuestion} />
+            <QuestionPreview title={text.previewVip} question={questions?.vip_question ?? null} />
           </div>
         </div>
       </section>
@@ -265,9 +314,9 @@ function MatchSummary({ match, prediction }: { match: Match; prediction: ExpertP
         </span>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <Metric label="Прогноз" value={prediction ? `${prediction.predicted_team_1_score}:${prediction.predicted_team_2_score}` : "не создан"} />
-        <Metric label="Статус" value={prediction?.is_published ? "опубликован" : prediction ? "черновик" : "нет"} />
-        <Metric label="Публикация" value={prediction?.published_at ? formatMatchDate(prediction.published_at) : "нет"} />
+        <Metric label={text.summaryForecast} value={prediction ? `${prediction.predicted_team_1_score}:${prediction.predicted_team_2_score}` : text.unpublished} />
+        <Metric label={text.summaryStatus} value={prediction?.is_published ? text.statusPublished : prediction ? text.statusDraft : text.statusMissing} />
+        <Metric label={text.summaryPublishedAt} value={prediction?.published_at ? formatMatchDate(prediction.published_at) : text.unpublishedDate} />
       </div>
     </div>
   );
@@ -298,11 +347,11 @@ function QuestionAnswerSelect({
   return (
     <AdminField label={label}>
       <div className="flex flex-col gap-2">
-        <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">{questionText ?? "Вопрос для выбранного матча не задан."}</div>
+        <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">{questionText ?? text.noQuestion}</div>
         <select className={inputClassName} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
-          <option value="unset">Не указывать</option>
-          <option value="true">Да</option>
-          <option value="false">Нет</option>
+          <option value="unset">{text.noValue}</option>
+          <option value="true">{text.yes}</option>
+          <option value="false">{text.no}</option>
         </select>
       </div>
     </AdminField>
@@ -313,8 +362,8 @@ function QuestionPreview({ title, question }: { title: string; question: Questio
   return (
     <div className="rounded-md bg-surface p-3">
       <div className="text-xs font-medium text-muted">{title}</div>
-      <div className="mt-1 text-sm">{question?.text ?? "Не задан"}</div>
-      {question ? <div className="mt-2 text-xs text-muted">{question.points} балл.</div> : null}
+      <div className="mt-1 text-sm">{question?.text ?? text.notSet}</div>
+      {question ? <div className="mt-2 text-xs text-muted">{question.points} {text.pointsSuffix}</div> : null}
     </div>
   );
 }

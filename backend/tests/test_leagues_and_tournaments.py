@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.v1.leagues import create_league
+from app.api.v1.admin import list_admin_tournament_prediction_questions
 from app.api.v1.tournaments import (
     create_or_update_tournament_prediction,
     list_my_tournament_prediction_questions,
@@ -172,6 +173,25 @@ def test_public_tournament_prediction_questions_hide_drafts() -> None:
 
     assert [question.code for question in questions] == ["winner"]
     assert questions[0].options[0].label == "Argentina"
+
+
+def test_admin_tournament_prediction_questions_list_includes_drafts() -> None:
+    db = create_test_session()
+    tournament = create_tournament(db)
+    question = TournamentPredictionQuestion(
+        tournament_id=tournament.id,
+        code="winner",
+        title="Tournament winner",
+        option_type=TournamentPredictionOptionType.team,
+        status=TournamentPredictionQuestionStatus.draft,
+        points=15,
+    )
+    db.add(question)
+    db.commit()
+
+    questions = list_admin_tournament_prediction_questions(tournament_id=tournament.id, db=db)
+
+    assert [item.code for item in questions] == ["winner"]
 
 
 def test_user_can_save_and_load_tournament_prediction() -> None:

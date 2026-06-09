@@ -7,6 +7,7 @@ import { LocalAuthNotice } from "@/components/LocalAuthNotice";
 import { TeamLogo } from "@/components/TeamLogo";
 import { apiGet, hasAccessToken, type Match } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta, isMatchArchived } from "@/lib/matchStatus";
+import { getPendingMatchActionsCount } from "@/lib/pending";
 
 const loadError = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043c\u0430\u0442\u0447\u0438.";
 const loadingLabel = "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...";
@@ -41,6 +42,7 @@ export function MatchesList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasToken, setHasToken] = useState(false);
+  const [canAnswerVip, setCanAnswerVip] = useState(false);
 
   useEffect(() => {
     const tokenExists = hasAccessToken();
@@ -51,7 +53,15 @@ export function MatchesList() {
     }
 
     apiGet<Match[]>("/matches")
-      .then(setMatches)
+      .then((rows) => {
+        setMatches(rows);
+        const premiumUntil = typeof window !== "undefined" ? sessionStorage.getItem("premium_until_hint") : null;
+        if (premiumUntil) {
+          setCanAnswerVip(new Date(premiumUntil).getTime() > Date.now());
+        } else {
+          setCanAnswerVip(false);
+        }
+      })
       .catch(() => setError(loadError))
       .finally(() => setIsLoading(false));
   }, []);
@@ -86,9 +96,14 @@ export function MatchesList() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">{dayLabel}</div>
         <h2 className="mt-2 text-xl font-semibold">{dayTitle}</h2>
         <p className="mt-2 text-sm text-muted">{dayBody}</p>
+        {activeMatches.filter((match) => getPendingMatchActionsCount(match, canAnswerVip) > 0).length > 0 ? (
+          <div className="mt-4 inline-flex rounded-full bg-red-500 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+            {`NEW ${activeMatches.filter((match) => getPendingMatchActionsCount(match, canAnswerVip) > 0).length}`}
+          </div>
+        ) : null}
       </section>
 
-      <MatchSection title={activeTitle} subtitle={activeSubtitle} emptyText={activeEmpty} matches={activeMatches} />
+      <MatchSection title={activeTitle} subtitle={activeSubtitle} emptyText={activeEmpty} matches={activeMatches} canAnswerVip={canAnswerVip} />
       <MatchSection title={archiveTitle} subtitle={archiveSubtitle} emptyText={archiveEmpty} matches={archivedMatches} subdued />
     </div>
   );
@@ -99,12 +114,14 @@ function MatchSection({
   subtitle,
   emptyText,
   matches,
+  canAnswerVip = false,
   subdued = false,
 }: {
   title: string;
   subtitle: string;
   emptyText: string;
   matches: Match[];
+  canAnswerVip?: boolean;
   subdued?: boolean;
 }) {
   return (
@@ -118,7 +135,7 @@ function MatchSection({
       ) : (
         <div className="flex flex-col gap-3">
           {matches.map((match) => (
-            <MatchCard key={match.id} match={match} subdued={subdued} />
+            <MatchCard key={match.id} match={match} subdued={subdued} canAnswerVip={canAnswerVip} />
           ))}
         </div>
       )}
@@ -126,8 +143,9 @@ function MatchSection({
   );
 }
 
-function MatchCard({ match, subdued }: { match: Match; subdued: boolean }) {
+function MatchCard({ match, subdued, canAnswerVip }: { match: Match; subdued: boolean; canAnswerVip: boolean }) {
   const status = getMatchStatusMeta(match);
+  const pendingCount = subdued ? 0 : getPendingMatchActionsCount(match, canAnswerVip);
 
   return (
     <Link
@@ -136,22 +154,27 @@ function MatchCard({ match, subdued }: { match: Match; subdued: boolean }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <TeamLogo logo={match.team_1_logo} name={match.team_1} size="md" />
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold">{match.team_1}</div>
-                <div className="mt-1 text-xs text-muted">{homeSideLabel}</div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-3">
+                <TeamLogo logo={match.team_1_logo} name={match.team_1} size="md" />
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold leading-tight break-words">{match.team_1}</div>
+                  <div className="mt-1 text-xs text-muted">{homeSideLabel}</div>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-center">
+                <div className="rounded-full bg-[rgba(23,32,51,0.05)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-muted">VS</div>
+              </div>
+              <div className="mt-3 flex min-w-0 items-center justify-end gap-3 text-right">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold leading-tight break-words">{match.team_2}</div>
+                  <div className="mt-1 text-xs text-muted">{awaySideLabel}</div>
+                </div>
+                <TeamLogo logo={match.team_2_logo} name={match.team_2} size="md" />
               </div>
             </div>
-            <div className="rounded-full bg-[rgba(23,32,51,0.05)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted">VS</div>
-            <div className="flex min-w-0 items-center gap-3 text-right">
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold">{match.team_2}</div>
-                <div className="mt-1 text-xs text-muted">{awaySideLabel}</div>
-              </div>
-              <TeamLogo logo={match.team_2_logo} name={match.team_2} size="md" />
-            </div>
+            {pendingCount > 0 ? <span className="rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">NEW</span> : null}
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted">
@@ -170,6 +193,7 @@ function MatchCard({ match, subdued }: { match: Match; subdued: boolean }) {
           ) : null}
 
           <PlayerMatchProgress match={match} />
+          {pendingCount > 0 ? <div className="mt-3 text-xs font-medium text-red-600">{`\u0416\u0434\u0443\u0442 \u043e\u0442\u0432\u0435\u0442\u0430: ${pendingCount}`}</div> : null}
         </div>
       </div>
     </Link>

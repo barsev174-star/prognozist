@@ -167,6 +167,12 @@ export type Team = {
   updated_at: string;
 };
 
+export type TeamSeedSummary = {
+  created: number;
+  updated: number;
+  total: number;
+};
+
 export type TournamentPredictionOption = {
   id: number;
   question_id: number;
@@ -229,6 +235,12 @@ export type TournamentPredictionQuestionWithUserPrediction = TournamentPredictio
   user_prediction: TournamentPrediction | null;
 };
 
+export type TournamentPredictionPendingSummary = {
+  tournament_id: number;
+  pending_questions_count: number;
+  total_questions_count: number;
+};
+
 export type AdminSystemLog = {
   id: number;
   event_type: string;
@@ -250,6 +262,49 @@ export type AdminPointsLog = {
   source_id: number;
   points: number;
   created_at: string;
+};
+
+export type ReferralStats = {
+  referral_link: string;
+  registered_count: number;
+  activated_count: number;
+  referral_points: number;
+  next_reward_at: number | null;
+  next_reward_points: number | null;
+};
+
+export type SupportRequestPayload = {
+  category: "bug" | "idea" | "question" | "payment";
+  message: string;
+};
+
+export type SupportRequestResponse = {
+  status: string;
+  category: "bug" | "idea" | "question" | "payment";
+  created_at: string;
+};
+
+export type StarAmount = {
+  amount: number;
+  nanostar_amount: number | null;
+};
+
+export type AdminStarTransaction = {
+  id: string;
+  amount: number;
+  nanostar_amount: number | null;
+  is_refund: boolean;
+  created_at: string;
+  partner_type: string;
+  transaction_type: string | null;
+  title: string;
+};
+
+export type AdminStarsSummary = {
+  balance: StarAmount;
+  transactions: AdminStarTransaction[];
+  incoming_total: number;
+  outgoing_total: number;
 };
 
 function getToken(): string | null {

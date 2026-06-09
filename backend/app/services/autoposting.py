@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import httpx
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -13,6 +15,12 @@ from app.models import (
     TournamentResult,
     VipQuestion,
 )
+
+
+@dataclass
+class VipChannelPublishResult:
+    ok: bool
+    detail: str
 
 
 def format_bool(value: bool | None) -> str:
@@ -78,11 +86,7 @@ def format_match_result_post(db: Session, match: Match, expert: ExpertPrediction
     questions = db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc())).all()
     vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
 
-    expert_score = (
-        f"{expert.predicted_team_1_score}:{expert.predicted_team_2_score}"
-        if expert is not None
-        else "не указан"
-    )
+    expert_score = f"{expert.predicted_team_1_score}:{expert.predicted_team_2_score}" if expert is not None else "не указан"
     average_prediction = (
         f"{float(avg_scores[0]):.1f}:{float(avg_scores[1]):.1f}"
         if avg_scores[0] is not None and avg_scores[1] is not None
@@ -144,14 +148,14 @@ def format_league_result_post(db: Session, league: League) -> str:
             f"Очки: {points_text}",
             f"Приз: {league.prize_description or 'не указан'}",
             "",
-            "Напоминание: данный приз был указан создателем лиги при создании соревнования.",
+            "Напоминание: этот приз был указан создателем лиги при создании соревнования.",
         ]
     )
 
 
-async def publish_to_vip_channel(text: str) -> None:
+async def publish_to_vip_channel(text: str) -> VipChannelPublishResult:
     if not settings.bot_internal_token:
-        return
+        return VipChannelPublishResult(ok=False, detail="Bot internal token is not configured")
 
     try:
         async with httpx.AsyncClient(base_url=settings.bot_internal_url, timeout=10) as client:
@@ -160,6 +164,16 @@ async def publish_to_vip_channel(text: str) -> None:
                 headers={"X-Bot-Internal-Token": settings.bot_internal_token},
                 json={"text": text},
             )
-            response.raise_for_status()
+            if response.is_success:
+                return VipChannelPublishResult(ok=True, detail="Published")
+
+            detail = "VIP channel publish failed"
+            try:
+                payload = response.json()
+                if isinstance(payload, dict) and isinstance(payload.get("detail"), str):
+                    detail = payload["detail"]
+            except ValueError:
+                pass
+            return VipChannelPublishResult(ok=False, detail=detail)
     except httpx.HTTPError:
-        return
+        return VipChannelPublishResult(ok=False, detail="VIP channel is unavailable")

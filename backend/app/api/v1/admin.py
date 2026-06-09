@@ -21,6 +21,7 @@ from app.models import (
     Tournament,
     TournamentPredictionOption,
     TournamentPredictionQuestion,
+    TournamentPredictionQuestionStatus,
     User,
     VipQuestion,
 )
@@ -29,7 +30,8 @@ from app.schemas.log import AdminPointsLogRead, AdminSystemLogRead
 from app.schemas.match import MatchCreate, MatchQuestionsRead, MatchRead, MatchResultUpdate, MatchUpdate
 from app.schemas.question import QuestionCreate, QuestionRead, QuestionUpdate
 from app.schemas.season import SeasonCreate, SeasonRead, SeasonUpdate
-from app.schemas.team import TeamCreate, TeamRead
+from app.schemas.star import AdminStarsSummaryRead, AdminStarTransactionRead, StarAmountRead
+from app.schemas.team import TeamCreate, TeamRead, TeamSeedSummaryRead
 from app.schemas.tournament import (
     TournamentCompletionReadinessRead,
     TournamentCompletionResultRead,
@@ -56,6 +58,8 @@ from app.services.autoposting import (
 )
 from app.services.scoring import score_completed_match
 from app.services.tournaments import complete_tournament, get_completion_readiness
+from app.services.telegram_bot_api import get_my_star_balance, get_star_transactions
+from app.services.team_seed import seed_world_cup_2026_teams
 from app.services.tournament_predictions import (
     build_tournament_prediction_resolution_summary,
     resolve_tournament_prediction_question,
@@ -121,6 +125,23 @@ def list_points_logs(limit: int = 100, db: Session = Depends(get_db)) -> list[Ad
         )
         for log in logs
     ]
+
+
+@router.get("/stars/summary", response_model=AdminStarsSummaryRead)
+def get_admin_stars_summary() -> AdminStarsSummaryRead:
+    try:
+        balance = get_my_star_balance()
+        transactions = get_star_transactions(limit=20)
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Telegram Stars summary is unavailable") from exc
+    incoming_total = sum(transaction.amount for transaction in transactions if transaction.amount > 0)
+    outgoing_total = abs(sum(transaction.amount for transaction in transactions if transaction.amount < 0))
+    return AdminStarsSummaryRead(
+        balance=StarAmountRead.model_validate(balance),
+        transactions=[AdminStarTransactionRead.model_validate(transaction) for transaction in transactions],
+        incoming_total=incoming_total,
+        outgoing_total=outgoing_total,
+    )
 
 
 @router.patch("/users/{user_id}", response_model=UserProfile)
@@ -266,6 +287,13 @@ def create_team(payload: TeamCreate, db: Session = Depends(get_db)) -> Team:
     db.commit()
     db.refresh(team)
     return team
+
+
+@router.post("/teams/seed-world-cup-2026", response_model=TeamSeedSummaryRead)
+def seed_teams_for_world_cup_2026(db: Session = Depends(get_db)) -> TeamSeedSummaryRead:
+    created, updated = seed_world_cup_2026_teams(db)
+    db.commit()
+    return TeamSeedSummaryRead(created=created, updated=updated, total=created + updated)
 
 
 @router.get("/tournaments/{tournament_id}/prediction-questions", response_model=list[TournamentPredictionQuestionRead])
@@ -465,11 +493,24 @@ def complete_tournament_endpoint(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     db.commit()
-    asyncio.run(publish_to_vip_channel(format_tournament_result_post(db, tournament.id)))
+    tournament_publish = asyncio.run(publish_to_vip_channel(format_tournament_result_post(db, tournament.id)))
+    if not tournament_publish.ok:
+        add_system_log(
+            db,
+            "vip_channel_publish_failed",
+            payload={"context": "tournament_complete", "tournament_id": tournament.id, "detail": tournament_publish.detail},
+        )
     for league_id in result.archived_league_ids:
         league = db.get(League, league_id)
         if league is not None:
-            asyncio.run(publish_to_vip_channel(format_league_result_post(db, league)))
+            league_publish = asyncio.run(publish_to_vip_channel(format_league_result_post(db, league)))
+            if not league_publish.ok:
+                add_system_log(
+                    db,
+                    "vip_channel_publish_failed",
+                    payload={"context": "league_complete", "league_id": league.id, "detail": league_publish.detail},
+                )
+    db.commit()
     return TournamentCompletionResultRead(
         tournament_id=result.tournament_id,
         tournament_results_created=result.tournament_results_created,
@@ -575,7 +616,9 @@ def publish_expert_prediction(
 
     questions = list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc(), Question.id.asc())))
     vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
-    asyncio.run(publish_to_vip_channel(format_expert_prediction_post(match, expert, questions, vip_question)))
+    publish_result = asyncio.run(publish_to_vip_channel(format_expert_prediction_post(match, expert, questions, vip_question)))
+    if not publish_result.ok:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=publish_result.detail)
 
     expert.is_published = True
     expert.published_at = datetime.now(UTC)
@@ -598,6 +641,16 @@ def build_admin_match_read(match: Match, db: Session) -> MatchRead:
     ) or 0
     vip_question_exists = db.scalar(select(VipQuestion.id).where(VipQuestion.match_id == match.id)) is not None
     data = MatchRead.model_validate(match).model_dump()
+    if data.get("team_1_id") is not None:
+        team_1 = db.get(Team, data["team_1_id"])
+        if team_1 is not None:
+            data["team_1"] = team_1.name
+            data["team_1_logo"] = team_1.logo_url or team_1.flag_emoji or data.get("team_1_logo")
+    if data.get("team_2_id") is not None:
+        team_2 = db.get(Team, data["team_2_id"])
+        if team_2 is not None:
+            data["team_2"] = team_2.name
+            data["team_2_logo"] = team_2.logo_url or team_2.flag_emoji or data.get("team_2_logo")
     data.update(
         public_questions_count=public_questions_count,
         vip_question_exists=vip_question_exists,
@@ -706,7 +759,15 @@ def enter_match_result(
     db.commit()
     db.refresh(match)
     expert = db.scalar(select(ExpertPrediction).where(ExpertPrediction.match_id == match.id))
-    asyncio.run(publish_to_vip_channel(format_match_result_post(db, match, expert)))
+    publish_result = asyncio.run(publish_to_vip_channel(format_match_result_post(db, match, expert)))
+    if not publish_result.ok:
+        add_system_log(
+            db,
+            "vip_channel_publish_failed",
+            user=current_admin,
+            payload={"context": "match_result", "match_id": match.id, "detail": publish_result.detail},
+        )
+        db.commit()
     return match
 
 

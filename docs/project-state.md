@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-06-08.
+Last updated: 2026-06-09.
 
 Repository: `barsev174-star/prognozist`.
 
@@ -137,6 +137,8 @@ Known recent service-clone history before this design batch:
 ### Admin And Backend
 
 - admin logs page supports donation-related events;
+- admin logs page now also surfaces support requests from Mini App users;
+- admin can now request Telegram Stars balance plus recent Stars transactions from the bot owner side;
 - backend tests were added for donation and VIP payment scenarios;
 - backup/restore/health/retention scripts were added for production operations;
 - production operations docs were added.
@@ -150,9 +152,37 @@ Known recent service-clone history before this design batch:
 
 - player-facing match section was cleaned from mojibake;
 - VIP page, rankings, and home structure were improved;
+- home now shows red counters for pending match actions and unanswered tournament prediction questions;
+- home counters now load independently, so a tournaments-summary failure no longer hides new match counters;
+- pending counters now ignore matches and tournament questions whose answer window is already closed;
+- match cards now surface `NEW` and a pending-actions count when the player still needs to answer;
 - leagues now have one-tap share and copy actions for invite flow;
 - league cards now render the in-league ranking directly in the Mini App;
 - direct entry into player sections now restores Telegram auth instead of assuming the home page was opened first;
+- referrals page now uses the live backend stats:
+  - personal link
+  - registered count
+  - activated count
+  - earned referral points
+  - share/copy actions
+- support page now exists inside the Mini App with a basic form for:
+  - bug reports
+  - ideas
+  - questions
+  - payment issues
+- admin match creation now supports one-click seeding of World Cup 2026 teams when the team directory is empty;
+- admin match creation now also shows a visible "refresh teams directory" action even when the directory is already filled;
+- World Cup 2026 seed data now writes Russian team names and flag-based logos by default;
+- player and admin match APIs now prefer the linked team directory name/logo over stale saved match text, so old matches can switch to Russian names and flags after a team-directory refresh;
+- support and referrals pages were normalized to use safe JSX expressions/constants for Russian labels, placeholders, and counters instead of raw rendered escape sequences;
+- expert prediction admin flow now has cleaned Russian text and clearer publish feedback;
+- manual expert publication no longer marks a forecast as published if the VIP channel is missing or unavailable;
+- automatic VIP-channel posts remain enabled for:
+  - expert forecast publication;
+  - completed match result with audience vs expert comparison;
+  - tournament completion;
+  - league completion;
+- match prediction layout in the Mini App was tightened for narrow screens by moving score inputs into a dedicated row under the team names;
 - release polish pass started for key player-facing screens:
   - home
   - matches list
@@ -201,8 +231,10 @@ Why it is not higher yet:
 
 - payment flow still needs final donation end-to-end validation;
 - there is still remaining mojibake in some non-player/admin/bot areas;
+- some older local test users/log rows may still show mojibake until those records are replaced with fresh data;
 - leagues may still want deeper auto-join Telegram invite links later;
 - bot UX still needs real-device validation after wiring the buttons and menu button;
+- new Stars summary and support flow still need one real production smoke pass;
 - monitoring is still lightweight;
 - broader real-user manual testing is still needed.
 
@@ -237,6 +269,7 @@ Current state:
 - VIP and donation buttons are handled;
 - ranking / leagues / referrals / support buttons now have handlers;
 - the bot now sets a persistent Telegram menu button to the Mini App when the URL is HTTPS;
+- the extra reply-keyboard `Открыть приложение` button was removed because the Telegram menu button and inline Mini App button are the reliable entry points;
 - opening the Mini App outside Telegram shows the expected "open inside Telegram" style behavior because Telegram init data is required.
 
 What should happen next:
@@ -264,6 +297,12 @@ Focus:
 - keep the new visual direction consistent across player-facing screens;
 - avoid redesigning flows while polishing.
 
+Important local validation note from 2026-06-09:
+
+- if pending counters change after rebuild, the new frontend/backend code is running;
+- if team names still stay English after that, refresh the teams directory from admin because older local seed rows may still exist;
+- once refreshed, old matches should now also pick up the Russian names/flag logos from the linked team records.
+
 ### 4. Teams / World Cup 2026 Data
 
 Need to move toward a proper team reference model instead of relying on string-only team fields and static frontend lists.
@@ -282,10 +321,33 @@ Still needed:
 
 - donation end-to-end test in production;
 - confirm logging/idempotency behavior after real donation;
-- decide whether donation analytics should remain logs-only or get a fuller admin view later.
+- decide whether donation analytics should remain:
+  - current stage: Stars balance + recent transactions + donation logs;
+  - later stage: fuller revenue/admin analytics view.
 - finish real VIP-channel smoke test with a configured production channel and bot admin rights.
 
-### 6. Production Data Cleanup
+### 6. Support And Retention
+
+Current state:
+
+- Mini App now has a basic support form;
+- support requests are stored in system logs;
+- best-effort admin notification through the bot is wired;
+- home now highlights pending player actions for matches and tournament predictions.
+- admin logs now fall back to `@username` / Telegram ID when a stored display name looks encoding-damaged.
+
+Next improvements:
+
+- real production smoke test for support delivery to admins;
+- decide whether support requests later need statuses or a dedicated admin queue;
+- keep daily bot reminders as a future wishlist item, not current scope.
+
+Estimated effort:
+
+- current smoke/polish: low;
+- later ticket workflow: medium.
+
+### 7. Production Data Cleanup
 
 Need a pre-launch cleanup pass on the VPS database.
 
@@ -304,7 +366,7 @@ Important caution:
   - admins + seasons/tournaments/teams;
   - admins + configured production content.
 
-### 7. Operations
+### 8. Operations
 
 Current baseline exists:
 
@@ -353,6 +415,17 @@ Current known app issue after deploy:
 - likely root cause found locally: missing `TournamentPredictionQuestionStatus` import in `backend/app/api/v1/admin.py`;
 - local fix was added in the main workspace but not yet committed/deployed through the safe Git path.
 
+Current known local-but-not-yet-production-validated UX batch:
+
+- bot section buttons were wired to open the Mini App directly in rankings, leagues, and referrals;
+- support button now opens the Mini App support form;
+- Telegram menu button is configured to open the Mini App directly when the bot starts with an HTTPS web app URL;
+- direct section entry in the Mini App now attempts Telegram auth restoration instead of assuming the home page was opened first;
+- home now shows pending-action counters for matches and tournament predictions;
+- referrals page now uses live backend stats instead of a placeholder;
+- admin logs page now requests Stars balance/transactions and surfaces support messages;
+- this batch should still be verified on real Telegram clients after the next safe deploy.
+
 ## Notes For Another Chat
 
 If another Codex chat starts without this context, it should be told all of the following:
@@ -368,8 +441,23 @@ If another Codex chat starts without this context, it should be told all of the 
 - tournament predictions were merged and deployed;
 - operational scripts/docs were added;
 - release design polish is in progress;
-- league share UX and league ranking UI are the next strong product wins;
-- bot main menu has dead buttons beyond VIP/donation and needs handler work;
+- league share UX and league ranking UI are implemented and now need validation/polish rather than first-pass wiring;
+- bot main menu buttons for rankings / leagues / referrals / support were wired locally and should be treated as a validation/deploy item, not a blank implementation task;
+- current local batch also includes:
+  - pending-action counters on home/matches/tournaments
+  - live referrals page
+  - support form
+  - first-stage Stars admin summary
+- future wishlist explicitly includes:
+  - daily bot reminders for inactive players with unanswered actions
+  - World Cup 2026 standings tables
+  - redesigned expert/VIP autopost timing:
+    - expert forecast should auto-publish at kickoff, not mark the match as completed;
+    - result post should auto-publish only after admin completes the match and scores it;
+    - manual publish, if kept, must be treated as an optional early post and not as match completion
+  - richer VIP channel post copy and formatting
+  - match-list layout pass so the `NEW` badge does not shift team alignment
+  - clearer admin-granted VIP channel access and expiry/removal behavior
 - production database cleanup before launch still needs a careful plan;
 - there is a likely undeployed local fix for tournament-question save/reload in `backend/app/api/v1/admin.py`;
 - main workspace Git may fail on `index.lock permission denied`;

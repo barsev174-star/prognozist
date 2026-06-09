@@ -18,6 +18,7 @@ from app.models import (
 from app.schemas.tournament import TournamentRead
 from app.schemas.tournament_prediction import (
     TournamentPredictionAnswerCreate,
+    TournamentPredictionPendingSummaryRead,
     TournamentPredictionQuestionRead,
     TournamentPredictionQuestionWithUserRead,
     TournamentPredictionRead,
@@ -163,3 +164,62 @@ def create_or_update_tournament_prediction(
     db.commit()
     db.refresh(prediction)
     return prediction
+
+
+@router.get(
+    "/mine/pending-summary",
+    response_model=list[TournamentPredictionPendingSummaryRead],
+)
+def list_my_tournament_prediction_pending_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[TournamentPredictionPendingSummaryRead]:
+    now = datetime.now(UTC)
+    tournaments = list(
+        db.scalars(
+            select(Tournament)
+            .where(Tournament.status.in_([TournamentStatus.active, TournamentStatus.upcoming]))
+            .order_by(Tournament.start_date.asc(), Tournament.id.asc())
+        )
+    )
+    rows: list[TournamentPredictionPendingSummaryRead] = []
+
+    for tournament in tournaments:
+        questions = list(
+            db.scalars(
+                select(TournamentPredictionQuestion).where(
+                    TournamentPredictionQuestion.tournament_id == tournament.id,
+                    TournamentPredictionQuestion.status == TournamentPredictionQuestionStatus.active,
+                    (TournamentPredictionQuestion.lock_at.is_(None) | (TournamentPredictionQuestion.lock_at > now)),
+                )
+            )
+        )
+        if not questions:
+            rows.append(
+                TournamentPredictionPendingSummaryRead(
+                    tournament_id=tournament.id,
+                    pending_questions_count=0,
+                    total_questions_count=0,
+                )
+            )
+            continue
+
+        predictions_by_question = {
+            prediction.question_id
+            for prediction in db.scalars(
+                select(TournamentPrediction).where(
+                    TournamentPrediction.user_id == current_user.id,
+                    TournamentPrediction.question_id.in_([question.id for question in questions]),
+                )
+            )
+        }
+        pending_count = sum(1 for question in questions if question.id not in predictions_by_question)
+        rows.append(
+            TournamentPredictionPendingSummaryRead(
+                tournament_id=tournament.id,
+                pending_questions_count=pending_count,
+                total_questions_count=len(questions),
+            )
+        )
+
+    return rows

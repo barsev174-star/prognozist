@@ -1,6 +1,6 @@
 # Product Notes
 
-Last updated: 2026-06-08.
+Last updated: 2026-06-09.
 
 ## What Is Working Well
 
@@ -8,6 +8,10 @@ Last updated: 2026-06-08.
 - HTTPS, backend health, bot polling, Mini App launch, and admin login are working.
 - Telegram Stars VIP flow is already in place.
 - Telegram Stars donations were added as the next monetization layer.
+- First-stage Stars admin visibility now exists:
+  - current balance
+  - recent transactions
+  - donation logs
 - Admin tooling is much more practical now:
   - users
   - logs
@@ -24,6 +28,8 @@ Last updated: 2026-06-08.
   - player tournament hub
   - player long-term answers
   - admin resolution with points award summary
+- Referrals now have a live player-facing page with share/copy actions and real counters.
+- Support now has a basic Mini App form instead of only a chat-side hint.
 
 ## Product Direction Right Now
 
@@ -39,9 +45,10 @@ This is better than spreading effort across too many new features.
 Updated tactical priority after the latest deploy:
 
 1. smooth leagues sharing and ranking UX;
-2. make bot navigation buttons actually useful;
-3. clean test data from production safely before launch;
-4. continue visual polish after the bigger UX gaps above are reduced.
+2. verify the newly wired bot entry points on real Telegram clients;
+3. validate Stars/support flows in production with real admin delivery;
+4. clean test data from production safely before launch;
+5. continue visual polish after the bigger UX gaps above are reduced.
 
 ## Release Polish Notes
 
@@ -73,6 +80,10 @@ Polish target screens:
 - profile
 - referrals
 
+Recent local polish note:
+
+- the match prediction block on mobile now places the score inputs on a separate row under the team names so long team names do not crush the layout.
+
 ## Important Technical Note About Russian Text
 
 There were two different text problems during recent work:
@@ -98,6 +109,10 @@ Safe pattern:
 
 or use a constant/expression.
 
+Practical note from local testing:
+
+- if old test users were created while text encoding was already damaged, those saved names can keep showing mojibake in logs until the records are refreshed or replaced.
+
 ## Monetization Notes
 
 ### Current position
@@ -117,6 +132,7 @@ Why:
 - fixed donation amounts
 - custom donation amount
 - backend donation persistence and logging
+- first-stage admin view of Stars balance and recent transactions
 - Mini App can now reopen the saved VIP private-channel invite link for an active subscriber when the link exists.
 
 ### Still needed
@@ -133,6 +149,12 @@ Current value framing:
 - one VIP question per match;
 - extra points for correct VIP answers;
 - private VIP channel distribution with invite-link recovery inside the Mini App.
+- expert forecast publication into the VIP channel;
+- automatic post after match completion with:
+  - final score;
+  - public/VIP answers;
+  - audience average prediction;
+  - comparison against expert forecast.
 
 Still important:
 
@@ -140,6 +162,7 @@ Still important:
   - bot creates invite links;
   - bot can publish into the channel;
   - active VIP user can reopen the stored invite link later from the Mini App.
+- manual expert publication must never show as "published" if the VIP channel is not configured or unavailable.
 
 ## Leagues Notes
 
@@ -160,6 +183,21 @@ Implementation note:
 - league ranking is not a heavy backend task anymore;
 - zero-point members should stay visible so new league players do not disappear from the table;
 - the next optional step is a deeper Telegram deep-link/auto-join flow, not the basic share UX itself.
+
+## Retention Notes
+
+Current practical step:
+
+- use in-app visibility first, not bot spam;
+- home now shows counters for pending match actions and unanswered tournament prediction questions;
+- match cards and tournament cards now surface `NEW` / pending counts where needed.
+- home counters now fail softly per section: if tournament summary fails, match reminders still stay visible.
+- pending counters must track only answerable items; locked match/tournament questions should not be treated as new work.
+
+Future wishlist:
+
+- daily bot reminders for players who still have unanswered actions;
+- keep this for later, after real-device validation of the current counters.
 
 ## Tournament Prediction Notes
 
@@ -190,7 +228,10 @@ Current team handling is still transitional.
 What exists:
 
 - World Cup 2026 team list support in admin creation flow
-- logo/flag-based placeholders
+- one-click team seeding in admin
+- visible team-directory refresh action in admin even when the directory is not empty
+- Russian team names plus flag-based logos in the default seed
+- old matches can now inherit fresh Russian names/flag logos from the linked team records after the directory is refreshed
 
 What should happen next:
 
@@ -217,7 +258,7 @@ Still missing for stronger launch safety:
 
 ## Bot UX Notes
 
-Current `/start` behavior is only partially aligned with the menu it shows.
+Current `/start` behavior is now much closer to the menu it shows, but still needs real-client validation after deploy.
 
 What exists:
 
@@ -225,13 +266,15 @@ What exists:
 - a separate inline Mini App button is sent
 - VIP and donation buttons are handled
 - ranking / leagues / referrals buttons now reopen Mini App directly in the relevant section
-- support button now answers instead of staying dead
+- support button now opens the Mini App support form instead of staying dead
 - Telegram menu button can now be pinned to the Mini App from the bot process
+- the redundant reply-keyboard `Открыть приложение` button was removed because it was the most visible broken entry point
 - direct section entry now can restore Telegram auth instead of depending on the home page to create the session token
 
 What is still weak:
 
 - Mini App opened outside Telegram is expected to fail because Telegram init data is missing
+- the new bot-driven section entry flow still needs one more pass on real Telegram clients after the next safe deploy
 
 Important product note:
 
@@ -261,14 +304,41 @@ Safe pattern:
 3. delete only approved categories of test data;
 4. rerun health checks.
 
+## Local QA Notes
+
+Important local reading for beginner-friendly debugging:
+
+- if one changed feature appears after rebuild, Docker most likely did pick up the latest code;
+- in the recent local test, changed counters proved the rebuild was real, so the remaining issues were actual code paths, not "Docker ignored the update";
+- literal `\u041f...` on screen points to a JSX rendering mistake, not browser cache;
+- English team names after rebuild can mean the old teams directory still needs a manual refresh from admin.
+
 ## Current Best Next Steps
 
 Priority order:
 
-1. prepare and execute safe production data cleanup;
-2. commit/deploy the local tournament-question admin fix;
-3. continue release polish in the actual Mini App;
-4. decide later whether league invites need a deeper Telegram auto-join link.
+1. commit/deploy the local tournament-question admin fix together with the bot/menu cleanup batch;
+2. verify bot section buttons, support entry, and Telegram menu button on real devices after deploy;
+3. run one real production smoke test for Stars balance visibility and support delivery;
+4. prepare and execute safe production data cleanup;
+5. continue release polish in the actual Mini App;
+6. decide later whether league invites need a deeper Telegram auto-join link.
+
+## Wishlist
+
+- daily bot reminders for players with unanswered match/tournament actions;
+- World Cup 2026 standings tables with points, goals for/against, wins, draws, and losses.
+- expert/VIP channel flow should be redesigned:
+  - admin prepares match, questions, and expert answers before kickoff;
+  - expert forecast post should appear automatically at match start, when player answers are already locked;
+  - match completion should publish a separate richer result post after admin presses "complete and score";
+  - optional manual "publish" button may stay, but it must not imply that the match is completed.
+- VIP channel post templates need a more lively tone and better discussion-oriented formatting.
+- match cards still need one more mobile/layout pass so the `NEW` badge does not push team names out of balance.
+- manual VIP grant from admin needs a clearer channel-access flow:
+  - either show the invite link reliably inside the VIP tab;
+  - or let admin generate/send a fresh invite path for the channel;
+  - also decide the correct removal policy when VIP expires.
 
 ## Handoff Reminder For Future Sessions
 

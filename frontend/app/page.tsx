@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { AuthGate } from "@/components/AuthGate";
-import type { UserProfile } from "@/lib/api";
+import {
+  apiGet,
+  type Match,
+  type TournamentPredictionPendingSummary,
+  type UserProfile,
+} from "@/lib/api";
+import { getPendingActiveMatchesCount, getPendingTournamentQuestionsCount, hasActiveVip } from "@/lib/pending";
 
 const sections = [
   { href: "/matches", label: "\u041c\u0430\u0442\u0447\u0438", eyebrow: "\u0418\u0433\u0440\u043e\u0432\u043e\u0439 \u0434\u0435\u043d\u044c" },
@@ -12,6 +19,7 @@ const sections = [
   { href: "/leagues", label: "\u041b\u0438\u0433\u0438", eyebrow: "\u0421\u043e\u043e\u0431\u0449\u0435\u0441\u0442\u0432\u043e" },
   { href: "/profile", label: "\u041f\u0440\u043e\u0444\u0438\u043b\u044c", eyebrow: "\u0410\u043a\u043a\u0430\u0443\u043d\u0442" },
   { href: "/referrals", label: "\u0420\u0435\u0444\u0435\u0440\u0430\u043b\u044b", eyebrow: "\u0420\u043e\u0441\u0442" },
+  { href: "/support", label: "\u041f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430", eyebrow: "\u041f\u043e\u043c\u043e\u0449\u044c" },
 ];
 
 const heroTitle = "\u0422\u0443\u0440\u043d\u0438\u0440 \u0444\u0443\u0442\u0431\u043e\u043b\u044c\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u0438\u0441\u0442\u043e\u0432";
@@ -28,60 +36,113 @@ const vipUpsell =
   "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 VIP, \u0447\u0442\u043e\u0431\u044b \u043e\u0442\u0432\u0435\u0447\u0430\u0442\u044c \u043d\u0430 \u0437\u0430\u043a\u0440\u044b\u0442\u044b\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u0438 \u043f\u043e\u043b\u0443\u0447\u0430\u0442\u044c \u0431\u043e\u043b\u044c\u0448\u0435 \u043e\u0447\u043a\u043e\u0432.";
 
 export default function HomePage() {
+  return (
+    <AuthGate>
+      {(user) => <HomeDashboard user={user} />}
+    </AuthGate>
+  );
+}
+
+function HomeDashboard({ user }: { user: UserProfile }) {
+  const [pendingMatchesCount, setPendingMatchesCount] = useState(0);
+  const [pendingTournamentCount, setPendingTournamentCount] = useState(0);
+  const canAnswerVip = hasActiveVip(user);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.allSettled([
+      apiGet<Match[]>("/matches"),
+      apiGet<TournamentPredictionPendingSummary[]>("/tournaments/mine/pending-summary"),
+    ]).then(([matchesResult, tournamentsResult]) => {
+      if (!isMounted) {
+        return;
+      }
+
+      if (matchesResult.status === "fulfilled") {
+        setPendingMatchesCount(getPendingActiveMatchesCount(matchesResult.value, canAnswerVip));
+      } else {
+        if (!isMounted) {
+          return;
+        }
+        setPendingMatchesCount(0);
+      }
+
+      if (tournamentsResult.status === "fulfilled") {
+        setPendingTournamentCount(getPendingTournamentQuestionsCount(tournamentsResult.value));
+      } else {
+        setPendingTournamentCount(0);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [canAnswerVip]);
+
+  const sectionBadges: Record<string, number> = {
+    "/matches": pendingMatchesCount,
+    "/tournaments": pendingTournamentCount,
+  };
+
   function logout() {
     sessionStorage.removeItem("access_token");
     window.location.href = "/dev-login";
   }
 
   return (
-    <AuthGate>
-      {(user) => (
-        <main className="min-h-screen px-4 py-5">
-          <div className="mx-auto flex max-w-md flex-col gap-4">
-            <section className="relative overflow-hidden rounded-[28px] border border-black/5 bg-[linear-gradient(135deg,#103b35_0%,#172033_56%,#264653_100%)] px-5 py-6 text-white shadow-[0_18px_55px_rgba(23,32,51,0.22)]">
-              <div className="absolute -right-10 top-0 h-32 w-32 rounded-full bg-[rgba(255,199,0,0.18)] blur-2xl" />
-              <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-[rgba(255,255,255,0.08)] blur-2xl" />
-              <div className="relative">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[rgba(255,255,255,0.72)]">Prognozist</p>
-                <h1 className="mt-2 max-w-xs text-3xl font-semibold leading-tight">{heroTitle}</h1>
-                <p className="mt-3 max-w-sm text-sm text-[rgba(255,255,255,0.78)]">
-                  {(user.first_name ?? user.username ?? defaultPlayerName) + ", " + heroBodyPrefix}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Badge>Telegram Mini App</Badge>
-                  <Badge>Live-matches</Badge>
-                  <Badge>{"VIP-\u043f\u0443\u043b"}</Badge>
-                </div>
-              </div>
-            </section>
-
-            <VipStatusCard user={user} />
-
-            <nav className="grid grid-cols-2 gap-3">
-              {sections.map((section) => (
-                <Link
-                  key={section.href}
-                  href={section.href}
-                  className="group rounded-[24px] border border-black/5 bg-white/90 px-4 py-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
-                >
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">{section.eyebrow}</div>
-                  <div className="mt-2 text-base font-semibold text-ink">{section.label}</div>
-                  <div className="mt-3 text-xs text-muted transition-colors group-hover:text-ink">{openSectionLabel}</div>
-                </Link>
-              ))}
-            </nav>
-
-            <button
-              type="button"
-              className="rounded-[20px] border border-black/10 bg-white/85 px-4 py-3 text-sm font-medium text-muted shadow-sm"
-              onClick={logout}
-            >
-              {logoutLabel}
-            </button>
+    <main className="min-h-screen px-4 py-5">
+      <div className="mx-auto flex max-w-md flex-col gap-4">
+        <section className="relative overflow-hidden rounded-[28px] border border-black/5 bg-[linear-gradient(135deg,#103b35_0%,#172033_56%,#264653_100%)] px-5 py-6 text-white shadow-[0_18px_55px_rgba(23,32,51,0.22)]">
+          <div className="absolute -right-10 top-0 h-32 w-32 rounded-full bg-[rgba(255,199,0,0.18)] blur-2xl" />
+          <div className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-[rgba(255,255,255,0.08)] blur-2xl" />
+          <div className="relative">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[rgba(255,255,255,0.72)]">Prognozist</p>
+            <h1 className="mt-2 max-w-xs text-3xl font-semibold leading-tight">{heroTitle}</h1>
+            <p className="mt-3 max-w-sm text-sm text-[rgba(255,255,255,0.78)]">
+              {(user.first_name ?? user.username ?? defaultPlayerName) + ", " + heroBodyPrefix}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Badge>Telegram Mini App</Badge>
+              <Badge>Live-matches</Badge>
+              <Badge>{"VIP-\u043f\u0443\u043b"}</Badge>
+              {pendingMatchesCount > 0 ? <AlertBadge>{`\u041c\u0430\u0442\u0447\u0438: ${pendingMatchesCount}`}</AlertBadge> : null}
+              {pendingTournamentCount > 0 ? <AlertBadge>{`\u0422\u0443\u0440\u043d\u0438\u0440\u044b: ${pendingTournamentCount}`}</AlertBadge> : null}
+            </div>
           </div>
-        </main>
-      )}
-    </AuthGate>
+        </section>
+
+        <VipStatusCard user={user} />
+
+        <nav className="grid grid-cols-2 gap-3">
+          {sections.map((section) => {
+            const badgeCount = sectionBadges[section.href] ?? 0;
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                className="group rounded-[24px] border border-black/5 bg-white/90 px-4 py-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)] transition-transform duration-200 hover:-translate-y-0.5"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">{section.eyebrow}</div>
+                  {badgeCount > 0 ? <CountBadge count={badgeCount} /> : null}
+                </div>
+                <div className="mt-2 text-base font-semibold text-ink">{section.label}</div>
+                <div className="mt-3 text-xs text-muted transition-colors group-hover:text-ink">{openSectionLabel}</div>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <button
+          type="button"
+          className="rounded-[20px] border border-black/10 bg-white/85 px-4 py-3 text-sm font-medium text-muted shadow-sm"
+          onClick={logout}
+        >
+          {logoutLabel}
+        </button>
+      </div>
+    </main>
   );
 }
 
@@ -129,4 +190,12 @@ function Badge({ children }: { children: React.ReactNode }) {
       {children}
     </span>
   );
+}
+
+function AlertBadge({ children }: { children: React.ReactNode }) {
+  return <span className="rounded-full bg-[rgba(239,68,68,0.9)] px-3 py-1 text-[11px] font-semibold text-white">{children}</span>;
+}
+
+function CountBadge({ count }: { count: number }) {
+  return <span className="rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">{count > 9 ? "9+" : count}</span>;
 }

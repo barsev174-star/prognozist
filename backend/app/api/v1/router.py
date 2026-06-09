@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import achievements, admin, auth, leagues, matches, payments, predictions, questions, rankings, referrals, tournaments, users, vip
+from app.api.v1 import achievements, admin, auth, leagues, matches, payments, predictions, questions, rankings, referrals, support, tournaments, users, vip
 
 router = APIRouter()
 
@@ -21,6 +21,7 @@ api_router.include_router(predictions.router)
 api_router.include_router(questions.router)
 api_router.include_router(rankings.router)
 api_router.include_router(referrals.router)
+api_router.include_router(support.router)
 api_router.include_router(tournaments.router)
 api_router.include_router(users.router)
 api_router.include_router(vip.router)
