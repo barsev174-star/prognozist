@@ -17,6 +17,7 @@ const errorText = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043
 const copyLabel = "\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c";
 const shareLabel = "\u041f\u043e\u0434\u0435\u043b\u0438\u0442\u044c\u0441\u044f";
 const copiedText = "\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0430.";
+const shareTextPrefix = "\u041f\u0440\u0438\u0441\u043e\u0435\u0434\u0438\u043d\u044f\u0439\u0441\u044f \u043a Prognozist:";
 
 type LoadState =
   | { status: "loading" }
@@ -48,7 +49,7 @@ function ReferralsContent() {
   }
 
   async function shareLink(link: string) {
-    const text = `\u041f\u0440\u0438\u0441\u043e\u0435\u0434\u0438\u043d\u044f\u0439\u0441\u044f \u043a Prognozist: ${link}`;
+    const text = `${shareTextPrefix} ${link}`;
     if (navigator.share) {
       await navigator.share({ text, url: link });
       return;

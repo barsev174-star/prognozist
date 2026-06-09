@@ -154,6 +154,7 @@ Known recent service-clone history before this design batch:
 - VIP page, rankings, and home structure were improved;
 - home now shows red counters for pending match actions and unanswered tournament prediction questions;
 - home counters now load independently, so a tournaments-summary failure no longer hides new match counters;
+- pending counters now ignore matches and tournament questions whose answer window is already closed;
 - match cards now surface `NEW` and a pending-actions count when the player still needs to answer;
 - leagues now have one-tap share and copy actions for invite flow;
 - league cards now render the in-league ranking directly in the Mini App;
@@ -170,6 +171,7 @@ Known recent service-clone history before this design batch:
   - questions
   - payment issues
 - admin match creation now supports one-click seeding of World Cup 2026 teams when the team directory is empty;
+- World Cup 2026 seed data now writes Russian team names and flag-based logos by default;
 - release polish pass started for key player-facing screens:
   - home
   - matches list

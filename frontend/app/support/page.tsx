@@ -7,6 +7,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { apiPost, type SupportRequestPayload, type SupportRequestResponse } from "@/lib/api";
 
 const title = "\u041f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430";
+const eyebrow = "\u041e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c";
 const heroTitle = "\u0420\u0430\u0441\u0441\u043a\u0430\u0436\u0438\u0442\u0435, \u0447\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a";
 const heroBody =
   "\u0417\u0434\u0435\u0441\u044c \u043c\u043e\u0436\u043d\u043e \u043e\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u0431\u0430\u0433, \u0438\u0434\u0435\u044e \u0438\u043b\u0438 \u0432\u043e\u043f\u0440\u043e\u0441. \u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435 \u043f\u0440\u0438\u0434\u0435\u0442 \u0432 \u0430\u0434\u043c\u0438\u043d\u043a\u0443.";
@@ -52,7 +53,7 @@ function SupportContent() {
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 px-4 py-5">
       <section className="rounded-[26px] border border-black/5 bg-[linear-gradient(135deg,rgba(23,32,51,0.12),rgba(239,68,68,0.1))] p-5 shadow-[0_10px_30px_rgba(23,32,51,0.08)]">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">\u041e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u044f\u0437\u044c</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">{eyebrow}</div>
         <h2 className="mt-2 text-xl font-semibold">{heroTitle}</h2>
         <p className="mt-2 text-sm text-muted">{heroBody}</p>
       </section>

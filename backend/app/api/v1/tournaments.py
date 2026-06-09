@@ -174,6 +174,7 @@ def list_my_tournament_prediction_pending_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[TournamentPredictionPendingSummaryRead]:
+    now = datetime.now(UTC)
     tournaments = list(
         db.scalars(
             select(Tournament)
@@ -189,6 +190,7 @@ def list_my_tournament_prediction_pending_summary(
                 select(TournamentPredictionQuestion).where(
                     TournamentPredictionQuestion.tournament_id == tournament.id,
                     TournamentPredictionQuestion.status == TournamentPredictionQuestionStatus.active,
+                    (TournamentPredictionQuestion.lock_at.is_(None) | (TournamentPredictionQuestion.lock_at > now)),
                 )
             )
         )

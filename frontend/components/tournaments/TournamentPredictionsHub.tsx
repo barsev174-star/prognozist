@@ -6,10 +6,19 @@ import { useEffect, useState } from "react";
 import { apiGet, type Tournament, type TournamentPredictionPendingSummary } from "@/lib/api";
 import { getPendingTournamentQuestionsCount } from "@/lib/pending";
 
-const loadingLabel = "Загрузка турниров...";
-const emptyLabel = "Пока нет активных турниров для долгосрочных прогнозов.";
-const errorLabel = "Не удалось загрузить список турниров.";
-const openLabel = "Открыть прогнозы";
+const text = {
+  loading: "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0442\u0443\u0440\u043d\u0438\u0440\u043e\u0432...",
+  empty: "\u041f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0430\u043a\u0442\u0438\u0432\u043d\u044b\u0445 \u0442\u0443\u0440\u043d\u0438\u0440\u043e\u0432 \u0434\u043b\u044f \u0434\u043e\u043b\u0433\u043e\u0441\u0440\u043e\u0447\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u043e\u0432.",
+  error: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u043f\u0438\u0441\u043e\u043a \u0442\u0443\u0440\u043d\u0438\u0440\u043e\u0432.",
+  open: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b",
+  new: "New",
+  unansweredPrefix: "\u0411\u0435\u0437 \u043e\u0442\u0432\u0435\u0442\u0430 \u043e\u0441\u0442\u0430\u043b\u043e\u0441\u044c",
+  unansweredSuffix: "\u0442\u0443\u0440\u043d\u0438\u0440\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u043e\u0432.",
+  waitingPrefix: "\u0416\u0434\u0443\u0442 \u043e\u0442\u0432\u0435\u0442\u0430:",
+  upcoming: "\u0421\u043a\u043e\u0440\u043e \u0441\u0442\u0430\u0440\u0442",
+  active: "\u0418\u0434\u0435\u0442 \u0442\u0443\u0440\u043d\u0438\u0440",
+  completed: "\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043d",
+};
 
 export function TournamentPredictionsHub() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -26,12 +35,12 @@ export function TournamentPredictionsHub() {
         setTournaments(tournamentRows);
         setPendingSummary(Object.fromEntries(pendingRows.map((row) => [row.tournament_id, row.pending_questions_count])));
       })
-      .catch(() => setStatusText(errorLabel))
+      .catch(() => setStatusText(text.error))
       .finally(() => setIsLoading(false));
   }, []);
 
   if (isLoading) {
-    return <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{loadingLabel}</div>;
+    return <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{text.loading}</div>;
   }
 
   if (statusText) {
@@ -39,29 +48,23 @@ export function TournamentPredictionsHub() {
   }
 
   if (tournaments.length === 0) {
-    return <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{emptyLabel}</div>;
+    return <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{text.empty}</div>;
   }
+
+  const totalPending = getPendingTournamentQuestionsCount(
+    Object.entries(pendingSummary).map(([tournamentId, pendingCount]) => ({
+      tournament_id: Number(tournamentId),
+      pending_questions_count: pendingCount,
+      total_questions_count: pendingCount,
+    })),
+  );
 
   return (
     <div className="flex flex-col gap-3">
-      {getPendingTournamentQuestionsCount(
-        Object.entries(pendingSummary).map(([tournamentId, pendingCount]) => ({
-          tournament_id: Number(tournamentId),
-          pending_questions_count: pendingCount,
-          total_questions_count: pendingCount,
-        })),
-      ) > 0 ? (
+      {totalPending > 0 ? (
         <section className="rounded-[24px] border border-red-200 bg-[rgba(254,242,242,0.95)] p-4 shadow-sm">
-          <div className="inline-flex rounded-full bg-red-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">New</div>
-          <p className="mt-3 text-sm text-red-700">
-            {`\u0411\u0435\u0437 \u043e\u0442\u0432\u0435\u0442\u0430 \u043e\u0441\u0442\u0430\u043b\u043e\u0441\u044c ${getPendingTournamentQuestionsCount(
-              Object.entries(pendingSummary).map(([tournamentId, pendingCount]) => ({
-                tournament_id: Number(tournamentId),
-                pending_questions_count: pendingCount,
-                total_questions_count: pendingCount,
-              })),
-            )} \u0442\u0443\u0440\u043d\u0438\u0440\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u043e\u0432.`}
-          </p>
+          <div className="inline-flex rounded-full bg-red-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">{text.new}</div>
+          <p className="mt-3 text-sm text-red-700">{`${text.unansweredPrefix} ${totalPending} ${text.unansweredSuffix}`}</p>
         </section>
       ) : null}
       {tournaments.map((tournament) => (
@@ -80,8 +83,8 @@ export function TournamentPredictionsHub() {
           </div>
           <h2 className="mt-2 text-lg font-semibold text-ink">{tournament.name}</h2>
           {tournament.description ? <p className="mt-2 text-sm text-muted">{tournament.description}</p> : null}
-          {(pendingSummary[tournament.id] ?? 0) > 0 ? <p className="mt-3 text-sm font-medium text-red-600">{`\u0416\u0434\u0443\u0442 \u043e\u0442\u0432\u0435\u0442\u0430: ${pendingSummary[tournament.id]}`}</p> : null}
-          <div className="mt-4 inline-flex rounded-full bg-ink px-4 py-2 text-sm font-medium text-white">{openLabel}</div>
+          {(pendingSummary[tournament.id] ?? 0) > 0 ? <p className="mt-3 text-sm font-medium text-red-600">{`${text.waitingPrefix} ${pendingSummary[tournament.id]}`}</p> : null}
+          <div className="mt-4 inline-flex rounded-full bg-ink px-4 py-2 text-sm font-medium text-white">{text.open}</div>
         </Link>
       ))}
     </div>
@@ -91,11 +94,11 @@ export function TournamentPredictionsHub() {
 function formatTournamentStatus(status: string): string {
   switch (status) {
     case "upcoming":
-      return "Скоро старт";
+      return text.upcoming;
     case "active":
-      return "Идет турнир";
+      return text.active;
     case "completed":
-      return "Завершен";
+      return text.completed;
     default:
       return status;
   }

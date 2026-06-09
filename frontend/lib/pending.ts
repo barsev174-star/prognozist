@@ -1,5 +1,5 @@
 import type { Match, TournamentPredictionPendingSummary, UserProfile } from "@/lib/api";
-import { isMatchArchived } from "@/lib/matchStatus";
+import { isMatchArchived, isPredictionLocked } from "@/lib/matchStatus";
 
 
 export function hasActiveVip(user: UserProfile): boolean {
@@ -12,6 +12,10 @@ export function hasActiveVip(user: UserProfile): boolean {
 
 
 export function getPendingMatchActionsCount(match: Match, canAnswerVip: boolean): number {
+  if (isPredictionLocked(match)) {
+    return 0;
+  }
+
   let count = 0;
 
   if (!match.user_prediction_submitted) {

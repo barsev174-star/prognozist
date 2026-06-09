@@ -18,12 +18,38 @@ type TournamentPredictionBoardProps = {
   tournamentId: number;
 };
 
-const loadingLabel = "Загрузка турнирных прогнозов...";
-const notFoundLabel = "Турнир не найден.";
-const loadErrorLabel = "Не удалось загрузить турнирные прогнозы.";
-const saveErrorLabel = "Не удалось сохранить ответ.";
-const emptyLabel = "Для этого турнира пока нет открытых long-term вопросов.";
-const backLabel = "← К турнирам";
+const text = {
+  loading: "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0442\u0443\u0440\u043d\u0438\u0440\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u043e\u0432...",
+  notFound: "\u0422\u0443\u0440\u043d\u0438\u0440 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.",
+  loadError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0442\u0443\u0440\u043d\u0438\u0440\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b.",
+  saveError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442.",
+  empty: "\u0414\u043b\u044f \u044d\u0442\u043e\u0433\u043e \u0442\u0443\u0440\u043d\u0438\u0440\u0430 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442 \u043e\u0442\u043a\u0440\u044b\u0442\u044b\u0445 \u0434\u043e\u043b\u0433\u043e\u0441\u0440\u043e\u0447\u043d\u044b\u0445 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432.",
+  back: "\u2190 \u041a \u0442\u0443\u0440\u043d\u0438\u0440\u0430\u043c",
+  defaultTitle: "\u0422\u0443\u0440\u043d\u0438\u0440\u043d\u044b\u0435 \u043f\u0440\u043e\u0433\u043d\u043e\u0437\u044b",
+  chooseFirst: "\u0421\u043d\u0430\u0447\u0430\u043b\u0430 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0432\u0430\u0440\u0438\u0430\u043d\u0442 \u0438\u043b\u0438 \u0432\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u0432\u043e\u0439 \u043e\u0442\u0432\u0435\u0442.",
+  saved: "\u041e\u0442\u0432\u0435\u0442 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d.",
+  longTerm: "\u0414\u043e\u043b\u0433\u0438\u0439 \u043f\u0440\u043e\u0433\u043d\u043e\u0437",
+  heroBody:
+    "\u0412\u044b\u0431\u0438\u0440\u0430\u0439\u0442\u0435 \u0438\u0441\u0445\u043e\u0434\u044b \u043d\u0430 \u0432\u0435\u0441\u044c \u0442\u0443\u0440\u043d\u0438\u0440 \u0437\u0430\u0440\u0430\u043d\u0435\u0435. \u041e\u0442\u0432\u0435\u0442 \u043c\u043e\u0436\u043d\u043e \u043e\u0431\u043d\u043e\u0432\u043b\u044f\u0442\u044c \u0434\u043e \u0434\u0435\u0434\u043b\u0430\u0439\u043d\u0430 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u0430.",
+  savedBadge: "\u041e\u0442\u0432\u0435\u0442 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d",
+  correct: "\u0412\u0435\u0440\u043d\u043e",
+  placeholder: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u0432\u043e\u0439 \u043f\u0440\u043e\u0433\u043d\u043e\u0437",
+  correctAnswer: "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442:",
+  notSpecified: "\u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d",
+  yourAnswer: "\u0412\u0430\u0448 \u043e\u0442\u0432\u0435\u0442:",
+  yourResult: "\u0412\u0430\u0448 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442:",
+  saving: "\u0421\u043e\u0445\u0440\u0430\u043d\u044f\u0435\u043c...",
+  update: "\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442",
+  save: "\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043e\u0442\u0432\u0435\u0442",
+  lockedHint: "\u0414\u0435\u0434\u043b\u0430\u0439\u043d \u043f\u0440\u043e\u0448\u0435\u043b \u0438\u043b\u0438 \u0432\u043e\u043f\u0440\u043e\u0441 \u0443\u0436\u0435 \u0437\u0430\u043a\u0440\u044b\u0442.",
+  active: "\u041e\u0442\u043a\u0440\u044b\u0442",
+  locked: "\u0417\u0430\u043a\u0440\u044b\u0442",
+  resolved: "\u0420\u0430\u0441\u0441\u0447\u0438\u0442\u0430\u043d",
+  cancelled: "\u041e\u0442\u043c\u0435\u043d\u0435\u043d",
+  draft: "\u0427\u0435\u0440\u043d\u043e\u0432\u0438\u043a",
+  noDeadline: "\u0411\u0435\u0437 \u0434\u0435\u0434\u043b\u0430\u0439\u043d\u0430",
+  until: "\u0414\u043e",
+};
 
 export function TournamentPredictionBoard({ tournamentId }: TournamentPredictionBoardProps) {
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -35,7 +61,7 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
   const [isLoading, setIsLoading] = useState(true);
   const [hasToken, setHasToken] = useState(false);
 
-  const tournamentTitle = useMemo(() => tournament?.name ?? "Турнирные прогнозы", [tournament]);
+  const tournamentTitle = useMemo(() => tournament?.name ?? text.defaultTitle, [tournament]);
 
   useEffect(() => {
     const tokenExists = hasAccessToken();
@@ -60,11 +86,9 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
             ]),
           ),
         );
-        setTextAnswers(
-          Object.fromEntries(questionRows.map((question) => [question.id, question.user_prediction?.free_text ?? ""])),
-        );
+        setTextAnswers(Object.fromEntries(questionRows.map((question) => [question.id, question.user_prediction?.free_text ?? ""])));
       })
-      .catch(() => setStatusText(loadErrorLabel))
+      .catch(() => setStatusText(text.loadError))
       .finally(() => setIsLoading(false));
   }, [tournamentId]);
 
@@ -73,18 +97,18 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
   }
 
   if (isLoading) {
-    return <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{loadingLabel}</div>;
+    return <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{text.loading}</div>;
   }
 
   if (!tournament) {
-    return <div className="rounded-[24px] border border-red-200 bg-white/90 p-4 text-sm text-red-600 shadow-sm">{statusText ?? notFoundLabel}</div>;
+    return <div className="rounded-[24px] border border-red-200 bg-white/90 p-4 text-sm text-red-600 shadow-sm">{statusText ?? text.notFound}</div>;
   }
 
   async function saveAnswer(questionId: number) {
     const selectedValue = answers[questionId] ?? "";
     const textValue = (textAnswers[questionId] ?? "").trim();
     if (!selectedValue && !textValue) {
-      setStatusText("Сначала выберите вариант или введите свой ответ.");
+      setStatusText(text.chooseFirst);
       return;
     }
 
@@ -106,9 +130,9 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
             : question,
         ),
       );
-      setStatusText("Ответ сохранен.");
+      setStatusText(text.saved);
     } catch {
-      setStatusText(saveErrorLabel);
+      setStatusText(text.saveError);
     } finally {
       setSavingQuestionId(null);
     }
@@ -117,15 +141,13 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
   return (
     <div className="flex flex-col gap-4">
       <section className="overflow-hidden rounded-[28px] border border-black/5 bg-[linear-gradient(135deg,#103b35_0%,#172033_58%,#264653_100%)] p-5 text-white shadow-[0_18px_55px_rgba(23,32,51,0.18)]">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">Долгий прогноз</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">{text.longTerm}</div>
         <h1 className="mt-2 text-2xl font-semibold">{tournamentTitle}</h1>
-        <p className="mt-3 text-sm text-white/78">
-          Выбирайте исходы на весь турнир заранее. Ответ можно обновлять до дедлайна каждого вопроса.
-        </p>
+        <p className="mt-3 text-sm text-white/78">{text.heroBody}</p>
       </section>
 
       {questions.length === 0 ? (
-        <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{emptyLabel}</div>
+        <div className="rounded-[24px] border border-black/5 bg-white/90 p-4 text-sm text-muted shadow-sm">{text.empty}</div>
       ) : (
         questions.map((question) => {
           const isLocked = !isQuestionEditable(question);
@@ -148,7 +170,7 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
 
               <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
                 <span className="rounded-full bg-[rgba(23,32,51,0.05)] px-3 py-1">{formatDeadline(question.lock_at)}</span>
-                {savedOptionId ? <span className="rounded-full bg-green-100 px-3 py-1 text-green-800">Ответ сохранен</span> : null}
+                {savedOptionId || savedText ? <span className="rounded-full bg-green-100 px-3 py-1 text-green-800">{text.savedBadge}</span> : null}
               </div>
 
               <div className="mt-4 flex flex-col gap-2">
@@ -169,7 +191,7 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
                     >
                       <TeamLogo logo={option.team?.logo_url ?? option.team?.flag_emoji ?? null} name={option.label} size="sm" />
                       <span className="min-w-0 flex-1 text-sm font-medium text-ink">{option.label}</span>
-                      {isCorrect ? <span className="text-xs font-semibold text-green-700">Верно</span> : null}
+                      {isCorrect ? <span className="text-xs font-semibold text-green-700">{text.correct}</span> : null}
                     </button>
                   );
                 })}
@@ -181,24 +203,22 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
                   disabled={isLocked}
                   value={textAnswers[question.id] ?? ""}
                   onChange={(event) => setTextAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
-                  placeholder="Введите свой прогноз"
+                  placeholder={text.placeholder}
                   className="mt-4 w-full rounded-[22px] border border-black/10 bg-white px-3 py-3 text-sm text-ink disabled:bg-surface disabled:text-muted"
                 />
               ) : null}
 
               {question.result ? (
                 <div className="mt-3 rounded-[20px] bg-[rgba(23,32,51,0.05)] px-3 py-3 text-sm text-muted">
-                  Правильный ответ: {resolvedOption?.label ?? question.result.correct_text ?? "не указан"}
+                  {text.correctAnswer} {resolvedOption?.label ?? question.result.correct_text ?? text.notSpecified}
                 </div>
               ) : null}
 
-              {!savedOptionId && savedText ? (
-                <div className="mt-3 rounded-[20px] bg-[rgba(23,32,51,0.05)] px-3 py-3 text-sm text-muted">Ваш ответ: {savedText}</div>
-              ) : null}
+              {!savedOptionId && savedText ? <div className="mt-3 rounded-[20px] bg-[rgba(23,32,51,0.05)] px-3 py-3 text-sm text-muted">{text.yourAnswer} {savedText}</div> : null}
 
               {question.status === "resolved" && question.user_prediction ? (
                 <div className="mt-3 rounded-[20px] bg-[rgba(16,59,53,0.08)] px-3 py-3 text-sm text-ink">
-                  {`Ваш результат: ${question.user_prediction.points_awarded ?? 0} ${formatPointsLabel(question.user_prediction.points_awarded ?? 0)}`}
+                  {`${text.yourResult} ${question.user_prediction.points_awarded ?? 0} ${formatPointsLabel(question.user_prediction.points_awarded ?? 0)}`}
                 </div>
               ) : null}
 
@@ -209,9 +229,9 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
                   onClick={() => saveAnswer(question.id)}
                   className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-white disabled:bg-slate-300"
                 >
-                  {savingQuestionId === question.id ? "Сохраняем..." : savedOptionId ? "Обновить ответ" : "Сохранить ответ"}
+                  {savingQuestionId === question.id ? text.saving : savedOptionId || savedText ? text.update : text.save}
                 </button>
-                {isLocked ? <span className="text-sm text-muted">Дедлайн прошел или вопрос уже закрыт.</span> : null}
+                {isLocked ? <span className="text-sm text-muted">{text.lockedHint}</span> : null}
               </div>
             </section>
           );
@@ -221,7 +241,7 @@ export function TournamentPredictionBoard({ tournamentId }: TournamentPrediction
       {statusText ? <div className="rounded-[20px] bg-white/90 px-4 py-3 text-sm text-muted shadow-sm">{statusText}</div> : null}
 
       <Link className="text-sm font-medium text-muted" href="/tournaments">
-        {backLabel}
+        {text.back}
       </Link>
     </div>
   );
@@ -240,23 +260,23 @@ function isQuestionEditable(question: TournamentPredictionQuestionWithUserPredic
 function formatQuestionStatus(status: TournamentPredictionQuestionWithUserPrediction["status"]): string {
   switch (status) {
     case "active":
-      return "Открыт";
+      return text.active;
     case "locked":
-      return "Закрыт";
+      return text.locked;
     case "resolved":
-      return "Рассчитан";
+      return text.resolved;
     case "cancelled":
-      return "Отменен";
+      return text.cancelled;
     default:
-      return "Черновик";
+      return text.draft;
   }
 }
 
 function formatDeadline(value: string | null): string {
   if (!value) {
-    return "Без дедлайна";
+    return text.noDeadline;
   }
-  return `До ${new Intl.DateTimeFormat("ru-RU", {
+  return `${text.until} ${new Intl.DateTimeFormat("ru-RU", {
     day: "2-digit",
     month: "long",
     hour: "2-digit",
@@ -266,10 +286,10 @@ function formatDeadline(value: string | null): string {
 
 function formatPointsLabel(points: number): string {
   if (points % 10 === 1 && points % 100 !== 11) {
-    return "балл";
+    return "\u0431\u0430\u043b\u043b";
   }
   if ([2, 3, 4].includes(points % 10) && ![12, 13, 14].includes(points % 100)) {
-    return "балла";
+    return "\u0431\u0430\u043b\u043b\u0430";
   }
-  return "баллов";
+  return "\u0431\u0430\u043b\u043b\u043e\u0432";
 }

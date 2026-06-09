@@ -181,6 +181,7 @@ Current practical step:
 - home now shows counters for pending match actions and unanswered tournament prediction questions;
 - match cards and tournament cards now surface `NEW` / pending counts where needed.
 - home counters now fail softly per section: if tournament summary fails, match reminders still stay visible.
+- pending counters must track only answerable items; locked match/tournament questions should not be treated as new work.
 
 Future wishlist:
 
@@ -217,7 +218,7 @@ What exists:
 
 - World Cup 2026 team list support in admin creation flow
 - one-click team seeding in admin when the directory is empty
-- logo/flag-based placeholders
+- Russian team names plus flag-based logos in the default seed
 
 What should happen next:
 
