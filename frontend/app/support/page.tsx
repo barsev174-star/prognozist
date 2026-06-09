@@ -11,6 +11,14 @@ const eyebrow = "\u041e\u0431\u0440\u0430\u0442\u043d\u0430\u044f \u0441\u0432\u
 const heroTitle = "\u0420\u0430\u0441\u0441\u043a\u0430\u0436\u0438\u0442\u0435, \u0447\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a";
 const heroBody =
   "\u0417\u0434\u0435\u0441\u044c \u043c\u043e\u0436\u043d\u043e \u043e\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u0431\u0430\u0433, \u0438\u0434\u0435\u044e \u0438\u043b\u0438 \u0432\u043e\u043f\u0440\u043e\u0441. \u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435 \u043f\u0440\u0438\u0434\u0435\u0442 \u0432 \u0430\u0434\u043c\u0438\u043d\u043a\u0443.";
+const categoryLabel = "\u0422\u0438\u043f \u043e\u0431\u0440\u0430\u0449\u0435\u043d\u0438\u044f";
+const messageLabel = "\u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435";
+const bugLabel = "\u0411\u0430\u0433";
+const ideaLabel = "\u0418\u0434\u0435\u044f";
+const questionLabel = "\u0412\u043e\u043f\u0440\u043e\u0441";
+const paymentLabel = "\u041e\u043f\u043b\u0430\u0442\u0430";
+const placeholderText = "\u041e\u043f\u0438\u0448\u0438\u0442\u0435 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u044e \u0438\u043b\u0438 \u0438\u0434\u0435\u044e";
+const sendingText = "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c...";
 const submitLabel = "\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c";
 const successText = "\u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043e. \u0421\u043f\u0430\u0441\u0438\u0431\u043e.";
 const errorText = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435.";
@@ -60,26 +68,26 @@ function SupportContent() {
 
       <form onSubmit={submitForm} className="rounded-[24px] border border-black/5 bg-white/92 p-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)]">
         <label className="block text-sm font-medium text-ink">
-          \u0422\u0438\u043f \u043e\u0431\u0440\u0430\u0449\u0435\u043d\u0438\u044f
+          {categoryLabel}
           <select
             className="mt-2 w-full rounded-[16px] border border-black/10 bg-white px-3 py-3 text-sm"
             value={category}
             onChange={(event) => setCategory(event.target.value as SupportRequestPayload["category"])}
           >
-            <option value="bug">\u0411\u0430\u0433</option>
-            <option value="idea">\u0418\u0434\u0435\u044f</option>
-            <option value="question">\u0412\u043e\u043f\u0440\u043e\u0441</option>
-            <option value="payment">\u041e\u043f\u043b\u0430\u0442\u0430</option>
+            <option value="bug">{bugLabel}</option>
+            <option value="idea">{ideaLabel}</option>
+            <option value="question">{questionLabel}</option>
+            <option value="payment">{paymentLabel}</option>
           </select>
         </label>
 
         <label className="mt-4 block text-sm font-medium text-ink">
-          \u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435
+          {messageLabel}
           <textarea
             className="mt-2 min-h-36 w-full rounded-[16px] border border-black/10 bg-white px-3 py-3 text-sm"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
-            placeholder="\u041e\u043f\u0438\u0448\u0438\u0442\u0435 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u044e \u0438\u043b\u0438 \u0438\u0434\u0435\u044e"
+            placeholder={placeholderText}
           />
         </label>
 
@@ -88,7 +96,7 @@ function SupportContent() {
           disabled={isSaving || message.trim().length < 10}
           type="submit"
         >
-          {isSaving ? "\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c..." : submitLabel}
+          {isSaving ? sendingText : submitLabel}
         </button>
 
         {status ? <p className="mt-3 text-sm text-muted">{status}</p> : null}

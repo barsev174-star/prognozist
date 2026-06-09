@@ -171,7 +171,10 @@ Known recent service-clone history before this design batch:
   - questions
   - payment issues
 - admin match creation now supports one-click seeding of World Cup 2026 teams when the team directory is empty;
+- admin match creation now also shows a visible "refresh teams directory" action even when the directory is already filled;
 - World Cup 2026 seed data now writes Russian team names and flag-based logos by default;
+- player and admin match APIs now prefer the linked team directory name/logo over stale saved match text, so old matches can switch to Russian names and flags after a team-directory refresh;
+- support and referrals pages were normalized to use safe JSX expressions/constants for Russian labels, placeholders, and counters instead of raw rendered escape sequences;
 - release polish pass started for key player-facing screens:
   - home
   - matches list
@@ -285,6 +288,12 @@ Focus:
 - confirm no literal `\u...` text remains;
 - keep the new visual direction consistent across player-facing screens;
 - avoid redesigning flows while polishing.
+
+Important local validation note from 2026-06-09:
+
+- if pending counters change after rebuild, the new frontend/backend code is running;
+- if team names still stay English after that, refresh the teams directory from admin because older local seed rows may still exist;
+- once refreshed, old matches should now also pick up the Russian names/flag logos from the linked team records.
 
 ### 4. Teams / World Cup 2026 Data
 

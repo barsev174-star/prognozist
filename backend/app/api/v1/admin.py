@@ -626,6 +626,16 @@ def build_admin_match_read(match: Match, db: Session) -> MatchRead:
     ) or 0
     vip_question_exists = db.scalar(select(VipQuestion.id).where(VipQuestion.match_id == match.id)) is not None
     data = MatchRead.model_validate(match).model_dump()
+    if data.get("team_1_id") is not None:
+        team_1 = db.get(Team, data["team_1_id"])
+        if team_1 is not None:
+            data["team_1"] = team_1.name
+            data["team_1_logo"] = team_1.logo_url or team_1.flag_emoji or data.get("team_1_logo")
+    if data.get("team_2_id") is not None:
+        team_2 = db.get(Team, data["team_2_id"])
+        if team_2 is not None:
+            data["team_2"] = team_2.name
+            data["team_2_logo"] = team_2.logo_url or team_2.flag_emoji or data.get("team_2_logo")
     data.update(
         public_questions_count=public_questions_count,
         vip_question_exists=vip_question_exists,

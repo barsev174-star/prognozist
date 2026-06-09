@@ -7,11 +7,30 @@ from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
 from app.db.session import get_db
-from app.models import Match, MatchStatus, Prediction, Question, QuestionAnswer, User, VipQuestion, VipQuestionAnswer
+from app.models import Match, MatchStatus, Prediction, Question, QuestionAnswer, Team, User, VipQuestion, VipQuestionAnswer
 from app.schemas.match import MatchDetailRead, MatchPointsBreakdownItem, MatchPointsBreakdownRead, MatchRead
 from app.services.scoring import SCORE_EXACT_POINTS
 
 router = APIRouter(prefix="/matches", tags=["Matches"])
+
+
+def enrich_match_display(data: dict, db: Session) -> dict:
+    team_1_id = data.get("team_1_id")
+    team_2_id = data.get("team_2_id")
+
+    if team_1_id is not None:
+        team_1 = db.get(Team, team_1_id)
+        if team_1 is not None:
+            data["team_1"] = team_1.name
+            data["team_1_logo"] = team_1.logo_url or team_1.flag_emoji or data.get("team_1_logo")
+
+    if team_2_id is not None:
+        team_2 = db.get(Team, team_2_id)
+        if team_2 is not None:
+            data["team_2"] = team_2.name
+            data["team_2_logo"] = team_2.logo_url or team_2.flag_emoji or data.get("team_2_logo")
+
+    return data
 
 
 def format_bool_answer(value: bool | None) -> str | None:
@@ -46,6 +65,7 @@ def build_match_read(match: Match, db: Session, current_user: User) -> MatchRead
         )
 
     data = MatchRead.model_validate(match).model_dump()
+    enrich_match_display(data, db)
     data.update(
         user_prediction_submitted=prediction_exists is not None,
         user_public_answers_count=public_answers_count,
@@ -86,6 +106,7 @@ def get_match(
     has_vip = current_user.premium_until is not None and current_user.premium_until > datetime.now(UTC)
 
     match_data = MatchRead.model_validate(match).model_dump()
+    enrich_match_display(match_data, db)
     return MatchDetailRead(
         **match_data,
         public_questions=public_questions,

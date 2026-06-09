@@ -18,6 +18,9 @@ const copyLabel = "\u0421\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\
 const shareLabel = "\u041f\u043e\u0434\u0435\u043b\u0438\u0442\u044c\u0441\u044f";
 const copiedText = "\u0421\u0441\u044b\u043b\u043a\u0430 \u0441\u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u043d\u0430.";
 const shareTextPrefix = "\u041f\u0440\u0438\u0441\u043e\u0435\u0434\u0438\u043d\u044f\u0439\u0441\u044f \u043a Prognozist:";
+const invitedLabel = "\u041f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u043e";
+const activatedLabel = "\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u043d\u043e";
+const pointsLabel = "\u041e\u0447\u043a\u0438";
 
 type LoadState =
   | { status: "loading" }
@@ -74,9 +77,9 @@ function ReferralsContent() {
           <>
             <div className="mt-4 rounded-[20px] bg-[rgba(23,32,51,0.04)] px-4 py-3 text-sm text-ink break-all">{state.data.referral_link}</div>
             <div className="mt-4 grid grid-cols-3 gap-3">
-              <StatCard label="\u041f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u043e" value={state.data.registered_count} />
-              <StatCard label="\u0410\u043a\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u043d\u043e" value={state.data.activated_count} />
-              <StatCard label="\u041e\u0447\u043a\u0438" value={state.data.referral_points} />
+              <StatCard label={invitedLabel} value={state.data.registered_count} />
+              <StatCard label={activatedLabel} value={state.data.activated_count} />
+              <StatCard label={pointsLabel} value={state.data.referral_points} />
             </div>
             {state.data.next_reward_at && state.data.next_reward_points ? (
               <p className="mt-4 text-sm text-muted">

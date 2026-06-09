@@ -217,8 +217,10 @@ Current team handling is still transitional.
 What exists:
 
 - World Cup 2026 team list support in admin creation flow
-- one-click team seeding in admin when the directory is empty
+- one-click team seeding in admin
+- visible team-directory refresh action in admin even when the directory is not empty
 - Russian team names plus flag-based logos in the default seed
+- old matches can now inherit fresh Russian names/flag logos from the linked team records after the directory is refreshed
 
 What should happen next:
 
@@ -290,6 +292,15 @@ Safe pattern:
 2. inspect current row counts and keep-list;
 3. delete only approved categories of test data;
 4. rerun health checks.
+
+## Local QA Notes
+
+Important local reading for beginner-friendly debugging:
+
+- if one changed feature appears after rebuild, Docker most likely did pick up the latest code;
+- in the recent local test, changed counters proved the rebuild was real, so the remaining issues were actual code paths, not "Docker ignored the update";
+- literal `\u041f...` on screen points to a JSX rendering mistake, not browser cache;
+- English team names after rebuild can mean the old teams directory still needs a manual refresh from admin.
 
 ## Current Best Next Steps
 
