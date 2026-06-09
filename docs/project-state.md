@@ -451,6 +451,13 @@ If another Codex chat starts without this context, it should be told all of the 
 - future wishlist explicitly includes:
   - daily bot reminders for inactive players with unanswered actions
   - World Cup 2026 standings tables
+  - redesigned expert/VIP autopost timing:
+    - expert forecast should auto-publish at kickoff, not mark the match as completed;
+    - result post should auto-publish only after admin completes the match and scores it;
+    - manual publish, if kept, must be treated as an optional early post and not as match completion
+  - richer VIP channel post copy and formatting
+  - match-list layout pass so the `NEW` badge does not shift team alignment
+  - clearer admin-granted VIP channel access and expiry/removal behavior
 - production database cleanup before launch still needs a careful plan;
 - there is a likely undeployed local fix for tournament-question save/reload in `backend/app/api/v1/admin.py`;
 - main workspace Git may fail on `index.lock permission denied`;

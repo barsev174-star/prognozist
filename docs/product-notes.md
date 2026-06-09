@@ -328,6 +328,17 @@ Priority order:
 
 - daily bot reminders for players with unanswered match/tournament actions;
 - World Cup 2026 standings tables with points, goals for/against, wins, draws, and losses.
+- expert/VIP channel flow should be redesigned:
+  - admin prepares match, questions, and expert answers before kickoff;
+  - expert forecast post should appear automatically at match start, when player answers are already locked;
+  - match completion should publish a separate richer result post after admin presses "complete and score";
+  - optional manual "publish" button may stay, but it must not imply that the match is completed.
+- VIP channel post templates need a more lively tone and better discussion-oriented formatting.
+- match cards still need one more mobile/layout pass so the `NEW` badge does not push team names out of balance.
+- manual VIP grant from admin needs a clearer channel-access flow:
+  - either show the invite link reliably inside the VIP tab;
+  - or let admin generate/send a fresh invite path for the channel;
+  - also decide the correct removal policy when VIP expires.
 
 ## Handoff Reminder For Future Sessions
 
