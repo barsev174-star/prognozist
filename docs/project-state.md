@@ -153,6 +153,7 @@ Known recent service-clone history before this design batch:
 - player-facing match section was cleaned from mojibake;
 - VIP page, rankings, and home structure were improved;
 - home now shows red counters for pending match actions and unanswered tournament prediction questions;
+- home counters now load independently, so a tournaments-summary failure no longer hides new match counters;
 - match cards now surface `NEW` and a pending-actions count when the player still needs to answer;
 - leagues now have one-tap share and copy actions for invite flow;
 - league cards now render the in-league ranking directly in the Mini App;
@@ -168,6 +169,7 @@ Known recent service-clone history before this design batch:
   - ideas
   - questions
   - payment issues
+- admin match creation now supports one-click seeding of World Cup 2026 teams when the team directory is empty;
 - release polish pass started for key player-facing screens:
   - home
   - matches list
@@ -216,6 +218,7 @@ Why it is not higher yet:
 
 - payment flow still needs final donation end-to-end validation;
 - there is still remaining mojibake in some non-player/admin/bot areas;
+- some older local test users/log rows may still show mojibake until those records are replaced with fresh data;
 - leagues may still want deeper auto-join Telegram invite links later;
 - bot UX still needs real-device validation after wiring the buttons and menu button;
 - new Stars summary and support flow still need one real production smoke pass;
@@ -312,6 +315,7 @@ Current state:
 - support requests are stored in system logs;
 - best-effort admin notification through the bot is wired;
 - home now highlights pending player actions for matches and tournament predictions.
+- admin logs now fall back to `@username` / Telegram ID when a stored display name looks encoding-damaged.
 
 Next improvements:
 

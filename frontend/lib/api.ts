@@ -167,6 +167,12 @@ export type Team = {
   updated_at: string;
 };
 
+export type TeamSeedSummary = {
+  created: number;
+  updated: number;
+  total: number;
+};
+
 export type TournamentPredictionOption = {
   id: number;
   question_id: number;

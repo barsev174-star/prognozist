@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -17,8 +17,12 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+function looksBrokenCyrillic(value: string): boolean {
+  return /[\u0403\u0453\u0409\u0459\u040A\u045A\u040C\u045C\u040F\u045F]/.test(value);
+}
+
 function formatUser(log: { first_name: string | null; username: string | null; telegram_id: number | null }): string {
-  if (log.first_name) {
+  if (log.first_name && !looksBrokenCyrillic(log.first_name)) {
     return log.first_name;
   }
   if (log.username) {
@@ -146,31 +150,31 @@ export function LogsAdmin() {
           <div>
             <h2 className="text-base font-semibold">\u0416\u0443\u0440\u043d\u0430\u043b</h2>
             <p className="mt-1 text-sm text-muted">
-              \u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u0441\u043e\u0431\u044b\u0442\u0438\u044f \u0430\u0434\u043c\u0438\u043d\u043a\u0438, \u0434\u043e\u043d\u0430\u0442\u044b, \u043e\u0431\u0440\u0430\u0449\u0435\u043d\u0438\u044f \u0432 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0443 \u0438 \u043d\u0430\u0447\u0438\u0441\u043b\u0435\u043d\u0438\u044f \u043e\u0447\u043a\u043e\u0432.
+              {"\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u0441\u043e\u0431\u044b\u0442\u0438\u044f \u0430\u0434\u043c\u0438\u043d\u043a\u0438, \u0434\u043e\u043d\u0430\u0442\u044b, \u043e\u0431\u0440\u0430\u0449\u0435\u043d\u0438\u044f \u0432 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0443 \u0438 \u043d\u0430\u0447\u0438\u0441\u043b\u0435\u043d\u0438\u044f \u043e\u0447\u043a\u043e\u0432."}
             </p>
           </div>
           <button type="button" onClick={load} className="rounded-md border border-black/10 bg-white px-3 py-2 text-sm font-medium">
-            \u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c
+            {"\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c"}
           </button>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <TabButton active={tab === "system"} onClick={() => setTab("system")}>
-            \u0421\u043e\u0431\u044b\u0442\u0438\u044f
+            {"\u0421\u043e\u0431\u044b\u0442\u0438\u044f"}
           </TabButton>
           <TabButton active={tab === "points"} onClick={() => setTab("points")}>
-            \u041e\u0447\u043a\u0438
+            {"\u041e\u0447\u043a\u0438"}
           </TabButton>
         </div>
         {tab === "system" ? (
           <div className="mt-3 flex flex-wrap gap-2">
             <TabButton active={systemFilter === "all"} onClick={() => setSystemFilter("all")}>
-              \u0412\u0441\u0435 \u0441\u043e\u0431\u044b\u0442\u0438\u044f
+              {"\u0412\u0441\u0435 \u0441\u043e\u0431\u044b\u0442\u0438\u044f"}
             </TabButton>
             <TabButton active={systemFilter === "donations"} onClick={() => setSystemFilter("donations")}>
-              \u0414\u043e\u043d\u0430\u0442\u044b
+              {"\u0414\u043e\u043d\u0430\u0442\u044b"}
             </TabButton>
             <TabButton active={systemFilter === "support"} onClick={() => setSystemFilter("support")}>
-              \u041f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430
+              {"\u041f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0430"}
             </TabButton>
           </div>
         ) : null}
@@ -179,7 +183,7 @@ export function LogsAdmin() {
 
       {starsSummary?.transactions.length ? (
         <section className="overflow-hidden rounded-lg bg-white shadow-sm">
-          <div className="border-b border-black/5 px-4 py-3 text-sm font-semibold">\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438 Stars</div>
+          <div className="border-b border-black/5 px-4 py-3 text-sm font-semibold">{"\u041f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 \u043e\u043f\u0435\u0440\u0430\u0446\u0438\u0438 Stars"}</div>
           <div className="divide-y divide-black/5">
             {starsSummary.transactions.map((transaction) => (
               <article key={transaction.id} className="grid gap-2 p-4 md:grid-cols-[180px_1fr_90px] md:items-center">
@@ -188,7 +192,7 @@ export function LogsAdmin() {
                   <div className="font-medium">{transaction.title}</div>
                   <div className="mt-1 text-sm text-muted">
                     {transaction.transaction_type ?? transaction.partner_type}
-                    {transaction.is_refund ? " · refund" : ""}
+                    {transaction.is_refund ? " • refund" : ""}
                   </div>
                 </div>
                 <div className={transaction.amount >= 0 ? "font-semibold text-green-700" : "font-semibold text-muted"}>
@@ -203,7 +207,7 @@ export function LogsAdmin() {
 
       <section className="overflow-hidden rounded-lg bg-white shadow-sm">
         {activeCount === 0 ? (
-          <div className="p-4 text-sm text-muted">\u0417\u0430\u043f\u0438\u0441\u0435\u0439 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442.</div>
+          <div className="p-4 text-sm text-muted">{"\u0417\u0430\u043f\u0438\u0441\u0435\u0439 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442."}</div>
         ) : tab === "system" ? (
           <SystemLogsList logs={filteredSystemLogs} />
         ) : (

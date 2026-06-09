@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { AdminField, inputClassName } from "@/components/admin/AdminField";
 import { TeamLogo } from "@/components/TeamLogo";
-import { apiGet, apiPost, type Match, type Question, type Team, type Tournament } from "@/lib/api";
+import { apiGet, apiPost, type Match, type Question, type Team, type TeamSeedSummary, type Tournament } from "@/lib/api";
 import { formatMatchDate, getMatchStatusMeta } from "@/lib/matchStatus";
 
 type MatchQuestions = {
@@ -25,11 +25,64 @@ type MatchForm = {
   status: string;
 };
 
+const text = {
+  loadError: "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043c\u0430\u0442\u0447\u0438. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0432\u0445\u043e\u0434 \u0432 \u0430\u0434\u043c\u0438\u043d\u043a\u0443.",
+  createSuccess: "\u041c\u0430\u0442\u0447 \u0441\u043e\u0437\u0434\u0430\u043d.",
+  createError:
+    "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0441\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u0430\u0442\u0447. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0442\u0443\u0440\u043d\u0438\u0440, \u043a\u043e\u043c\u0430\u043d\u0434\u044b \u0438 \u0432\u0445\u043e\u0434 \u0432 \u0430\u0434\u043c\u0438\u043d\u043a\u0443.",
+  completeSuccess:
+    "\u041c\u0430\u0442\u0447 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d, \u0431\u0430\u043b\u043b\u044b \u043d\u0430\u0447\u0438\u0441\u043b\u0435\u043d\u044b. \u0415\u0441\u043b\u0438 VIP-\u0433\u0440\u0443\u043f\u043f\u0430 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u0430, \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u044f \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u0430 \u0443\u0436\u0435 \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0430.",
+  completeError:
+    "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043c\u0430\u0442\u0447. \u0412\u043e\u0437\u043c\u043e\u0436\u043d\u043e, \u043e\u043d \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d \u0438\u043b\u0438 \u0434\u043b\u044f \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d\u044b \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b.",
+  seedSuccess:
+    "\u0421\u043f\u0438\u0441\u043e\u043a \u0441\u0431\u043e\u0440\u043d\u044b\u0445 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d. \u0422\u0435\u043f\u0435\u0440\u044c \u043a\u043e\u043c\u0430\u043d\u0434\u044b \u043c\u043e\u0436\u043d\u043e \u0432\u044b\u0431\u0438\u0440\u0430\u0442\u044c \u0438\u0437 \u0432\u044b\u043f\u0430\u0434\u0430\u044e\u0449\u0435\u0433\u043e \u0441\u043f\u0438\u0441\u043a\u0430.",
+  seedError:
+    "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u043f\u0438\u0441\u043e\u043a \u0441\u0431\u043e\u0440\u043d\u044b\u0445. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u0431\u044d\u043a\u0435\u043d\u0434 \u0438 \u043f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0435 \u0440\u0430\u0437.",
+  createTitle: "\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u0430\u0442\u0447",
+  tournament: "\u0422\u0443\u0440\u043d\u0438\u0440",
+  emptyTeamsTitle: "\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u0441\u0431\u043e\u0440\u043d\u044b\u0445 \u043f\u043e\u043a\u0430 \u043f\u0443\u0441\u0442\u043e\u0439.",
+  emptyTeamsBody:
+    "\u041c\u043e\u0436\u043d\u043e \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c \u0432\u0440\u0443\u0447\u043d\u0443\u044e, \u043d\u043e \u0443\u0434\u043e\u0431\u043d\u0435\u0435 \u0441\u043d\u0430\u0447\u0430\u043b\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0433\u043e\u0442\u043e\u0432\u044b\u0439 \u0441\u043f\u0438\u0441\u043e\u043a \u043a\u043e\u043c\u0430\u043d\u0434 \u0434\u043b\u044f \u0427\u041c-2026.",
+  seedButton: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0441\u0431\u043e\u0440\u043d\u044b\u0435 \u0427\u041c-2026",
+  seedButtonLoading: "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u044e \u043a\u043e\u043c\u0430\u043d\u0434\u044b...",
+  team1: "\u041a\u043e\u043c\u0430\u043d\u0434\u0430 1",
+  team2: "\u041a\u043e\u043c\u0430\u043d\u0434\u0430 2",
+  startTime: "\u0412\u0440\u0435\u043c\u044f \u043d\u0430\u0447\u0430\u043b\u0430",
+  createButton: "\u0421\u043e\u0437\u0434\u0430\u0442\u044c \u043c\u0430\u0442\u0447",
+  completeTitle: "\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043c\u0430\u0442\u0447 \u0438 \u043d\u0430\u0447\u0438\u0441\u043b\u0438\u0442\u044c \u0431\u0430\u043b\u043b\u044b",
+  match: "\u041c\u0430\u0442\u0447",
+  finalScore: "\u0418\u0442\u043e\u0433\u043e\u0432\u044b\u0439 \u0441\u0447\u0435\u0442",
+  completeLocked:
+    "\u041f\u043e\u0432\u0442\u043e\u0440\u043d\u043e\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d\u0438\u0435 \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043e.",
+  completeHint:
+    "\u041c\u0430\u0442\u0447 \u0435\u0449\u0435 \u043c\u043e\u0436\u043d\u043e \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u043f\u043e\u0441\u043b\u0435 \u0432\u043d\u0435\u0441\u0435\u043d\u0438\u044f \u0438\u0442\u043e\u0433\u043e\u0432\u043e\u0433\u043e \u0441\u0447\u0435\u0442\u0430 \u0438 \u043f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0445 \u043e\u0442\u0432\u0435\u0442\u043e\u0432.",
+  score1: "\u0421\u0447\u0435\u0442 1",
+  score2: "\u0421\u0447\u0435\u0442 2",
+  publicAnswerPrefix: "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442 \u043f\u0443\u0431\u043b\u0438\u0447\u043d\u043e\u0433\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u0430",
+  noPublicQuestions: "\u041f\u0443\u0431\u043b\u0438\u0447\u043d\u044b\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u044b \u0434\u043b\u044f \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0433\u043e \u043c\u0430\u0442\u0447\u0430 \u043f\u043e\u043a\u0430 \u043d\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u044b.",
+  vipAnswer: "\u041f\u0440\u0430\u0432\u0438\u043b\u044c\u043d\u044b\u0439 \u043e\u0442\u0432\u0435\u0442 VIP-\u0432\u043e\u043f\u0440\u043e\u0441\u0430",
+  completedButton: "\u041c\u0430\u0442\u0447 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043d",
+  completeButton: "\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u0438 \u043d\u0430\u0447\u0438\u0441\u043b\u0438\u0442\u044c",
+  teamPicker: "\u0412\u044b\u0431\u0440\u0430\u0442\u044c \u0438\u0437 \u0441\u043f\u0438\u0441\u043a\u0430 \u0441\u0431\u043e\u0440\u043d\u044b\u0445",
+  chooseTeam: "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043e\u043c\u0430\u043d\u0434\u0443",
+  teamName: "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435",
+  teamLogo: "\u041b\u043e\u0433\u043e\u0442\u0438\u043f, \u044d\u043c\u043e\u0434\u0437\u0438 \u0438\u043b\u0438 URL",
+  noQuestionYet: "\u0412\u043e\u043f\u0440\u043e\u0441 \u0434\u043b\u044f \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0433\u043e \u043c\u0430\u0442\u0447\u0430 \u0435\u0449\u0435 \u043d\u0435 \u0437\u0430\u0434\u0430\u043d.",
+  yes: "\u0414\u0430",
+  no: "\u041d\u0435\u0442",
+  questionsOk: "\u0412\u043e\u043f\u0440\u043e\u0441\u044b OK",
+  questionsPrefix: "\u0412\u043e\u043f\u0440\u043e\u0441\u044b",
+  questionsConfigured: "\u0412\u043e\u043f\u0440\u043e\u0441\u044b \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u044b",
+  vipExists: "\u0435\u0441\u0442\u044c",
+  vipMissing: "\u043d\u0435\u0442",
+};
+
 export function MatchesAdmin() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<MatchQuestions | null>(null);
+  const [isSeedingTeams, setIsSeedingTeams] = useState(false);
   const [form, setForm] = useState<MatchForm>({
     tournament_id: "",
     team_1_id: "",
@@ -62,9 +115,11 @@ export function MatchesAdmin() {
     setTournaments(tournamentRows);
     setTeams(teamRows);
     setMatches(matchRows);
+
     if (!form.tournament_id && tournamentRows[0]) {
       setForm((current) => ({ ...current, tournament_id: String(tournamentRows[0].id) }));
     }
+
     if (!resultForm.match_id && matchRows[0]) {
       setResultForm((current) => ({ ...current, match_id: String(matchRows[0].id) }));
     }
@@ -83,6 +138,7 @@ export function MatchesAdmin() {
       : questions.public_question
         ? [questions.public_question]
         : [];
+
     setResultForm((current) => ({
       ...current,
       public_correct_answers: Object.fromEntries(publicQuestions.map((question) => [question.id, "true"])),
@@ -90,7 +146,7 @@ export function MatchesAdmin() {
   }
 
   useEffect(() => {
-    load().catch(() => setMessage("Не удалось загрузить матчи. Проверьте вход в админку."));
+    load().catch(() => setMessage(text.loadError));
   }, []);
 
   useEffect(() => {
@@ -120,19 +176,19 @@ export function MatchesAdmin() {
         team_2_logo: form.team_2_logo || null,
         start_time: new Date(form.start_time).toISOString(),
       });
-      setForm({
-        ...form,
+      setForm((current) => ({
+        ...current,
         team_1_id: "",
         team_2_id: "",
         team_1: "",
         team_2: "",
         team_1_logo: "",
         team_2_logo: "",
-      });
-      setMessage("Матч создан.");
+      }));
+      setMessage(text.createSuccess);
       await load();
     } catch {
-      setMessage("Не удалось создать матч. Проверьте турнир, команды и вход в админку.");
+      setMessage(text.createError);
     }
   }
 
@@ -149,19 +205,33 @@ export function MatchesAdmin() {
         ),
         vip_correct_answer: resultForm.vip_correct_answer === "true",
       });
-      setMessage("Матч завершен, баллы начислены, публикация отправлена в VIP-группу при настроенном канале.");
+      setMessage(text.completeSuccess);
       await load();
       await loadQuestions(resultForm.match_id);
     } catch {
-      setMessage("Не удалось завершить матч. Возможно, он уже завершен или у вопросов не хватает ответов.");
+      setMessage(text.completeError);
+    }
+  }
+
+  async function seedTeams() {
+    setIsSeedingTeams(true);
+    setMessage(null);
+    try {
+      await apiPost<TeamSeedSummary>("/admin/teams/seed-world-cup-2026");
+      await load();
+      setMessage(text.seedSuccess);
+    } catch {
+      setMessage(text.seedError);
+    } finally {
+      setIsSeedingTeams(false);
     }
   }
 
   return (
     <div className="grid gap-4 xl:grid-cols-[380px_420px_1fr]">
       <form onSubmit={createMatch} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">Создать матч</h2>
-        <AdminField label="Турнир">
+        <h2 className="text-base font-semibold">{text.createTitle}</h2>
+        <AdminField label={text.tournament}>
           <select className={inputClassName} value={form.tournament_id} onChange={(event) => setForm({ ...form, tournament_id: event.target.value })}>
             {tournaments.map((tournament) => (
               <option key={tournament.id} value={tournament.id}>
@@ -171,8 +241,23 @@ export function MatchesAdmin() {
           </select>
         </AdminField>
 
+        {teams.length === 0 ? (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+            <p>{text.emptyTeamsTitle}</p>
+            <p className="mt-1">{text.emptyTeamsBody}</p>
+            <button
+              type="button"
+              onClick={seedTeams}
+              disabled={isSeedingTeams}
+              className="mt-3 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+            >
+              {isSeedingTeams ? text.seedButtonLoading : text.seedButton}
+            </button>
+          </div>
+        ) : null}
+
         <TeamSelect
-          title="Команда 1"
+          title={text.team1}
           teams={teams}
           selectedTeamId={form.team_1_id}
           name={form.team_1}
@@ -182,7 +267,7 @@ export function MatchesAdmin() {
           onLogoChange={(team_1_logo) => setForm({ ...form, team_1_logo })}
         />
         <TeamSelect
-          title="Команда 2"
+          title={text.team2}
           teams={teams}
           selectedTeamId={form.team_2_id}
           name={form.team_2}
@@ -192,15 +277,15 @@ export function MatchesAdmin() {
           onLogoChange={(team_2_logo) => setForm({ ...form, team_2_logo })}
         />
 
-        <AdminField label="Время начала">
+        <AdminField label={text.startTime}>
           <input type="datetime-local" className={inputClassName} value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} />
         </AdminField>
-        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">Создать матч</button>
+        <button className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white">{text.createButton}</button>
       </form>
 
       <form onSubmit={completeMatch} className="flex flex-col gap-3 rounded-lg bg-white p-4 shadow-sm">
-        <h2 className="text-base font-semibold">Завершить матч и начислить баллы</h2>
-        <AdminField label="Матч">
+        <h2 className="text-base font-semibold">{text.completeTitle}</h2>
+        <AdminField label={text.match}>
           <select
             className={inputClassName}
             value={resultForm.match_id}
@@ -227,18 +312,18 @@ export function MatchesAdmin() {
             </div>
             {isSelectedResultCompleted && selectedResultMatch.team_1_score !== null && selectedResultMatch.team_2_score !== null ? (
               <div className="mt-1">
-                Итоговый счет: {selectedResultMatch.team_1_score}:{selectedResultMatch.team_2_score}. Повторное завершение заблокировано.
+                {text.finalScore}: {selectedResultMatch.team_1_score}:{selectedResultMatch.team_2_score}. {text.completeLocked}
               </div>
             ) : (
-              <div className="mt-1">Матч еще можно завершить после внесения итогового счета и правильных ответов.</div>
+              <div className="mt-1">{text.completeHint}</div>
             )}
           </div>
         ) : null}
         <div className="grid grid-cols-2 gap-2">
-          <AdminField label="Счет 1">
+          <AdminField label={text.score1}>
             <input type="number" min={0} className={inputClassName} value={resultForm.team_1_score} disabled={isSelectedResultCompleted} onChange={(event) => setResultForm({ ...resultForm, team_1_score: event.target.value })} />
           </AdminField>
-          <AdminField label="Счет 2">
+          <AdminField label={text.score2}>
             <input type="number" min={0} className={inputClassName} value={resultForm.team_2_score} disabled={isSelectedResultCompleted} onChange={(event) => setResultForm({ ...resultForm, team_2_score: event.target.value })} />
           </AdminField>
         </div>
@@ -250,7 +335,7 @@ export function MatchesAdmin() {
         ).map((question) => (
           <QuestionAnswerField
             key={question.id}
-            label={`Правильный ответ публичного вопроса ${question.slot}`}
+            label={`${text.publicAnswerPrefix} ${question.slot}`}
             questionText={question.text}
             value={resultForm.public_correct_answers[question.id] ?? "true"}
             disabled={isSelectedResultCompleted}
@@ -263,17 +348,17 @@ export function MatchesAdmin() {
           />
         ))}
         {selectedQuestions && selectedQuestions.public_questions.length === 0 && !selectedQuestions.public_question ? (
-          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">Публичный вопрос для выбранного матча не настроен.</div>
+          <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">{text.noPublicQuestions}</div>
         ) : null}
         <QuestionAnswerField
-          label="Правильный ответ VIP-вопроса"
+          label={text.vipAnswer}
           questionText={selectedQuestions?.vip_question?.text}
           value={resultForm.vip_correct_answer}
           disabled={isSelectedResultCompleted}
           onChange={(value) => setResultForm({ ...resultForm, vip_correct_answer: value })}
         />
         <button disabled={isSelectedResultCompleted} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-          {isSelectedResultCompleted ? "Матч уже завершен" : "Завершить и начислить"}
+          {isSelectedResultCompleted ? text.completedButton : text.completeButton}
         </button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
       </form>
@@ -285,7 +370,9 @@ export function MatchesAdmin() {
             <div key={match.id} className="border-b border-black/5 p-4 last:border-b-0">
               <div className="flex items-center gap-3 font-medium">
                 <TeamLogo logo={match.team_1_logo} name={match.team_1} size="sm" />
-                <span className="min-w-0">{match.team_1} - {match.team_2}</span>
+                <span className="min-w-0">
+                  {match.team_1} - {match.team_2}
+                </span>
                 <TeamLogo logo={match.team_2_logo} name={match.team_2} size="sm" />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
@@ -299,7 +386,9 @@ export function MatchesAdmin() {
                 <QuestionReadinessBadge match={match} />
               </div>
               {match.team_1_score !== null && match.team_2_score !== null ? (
-                <div className="mt-2 text-sm">Итоговый счет: {match.team_1_score}:{match.team_2_score}</div>
+                <div className="mt-2 text-sm">
+                  {text.finalScore}: {match.team_1_score}:{match.team_2_score}
+                </div>
               ) : null}
             </div>
           );
@@ -334,7 +423,7 @@ function TeamSelect({
         <TeamLogo logo={logo} name={name || title} />
         <div className="text-sm font-medium">{title}</div>
       </div>
-      <AdminField label="Выбрать из списка сборных">
+      <AdminField label={text.teamPicker}>
         <select
           className={inputClassName}
           value={selectedTeamId}
@@ -345,7 +434,7 @@ function TeamSelect({
             }
           }}
         >
-          <option value="">Выберите команду</option>
+          <option value="">{text.chooseTeam}</option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>
               {(team.flag_emoji ?? team.logo_url ?? "")} {team.name} - {(team.fifa_code ?? team.confederation).toUpperCase()}
@@ -353,10 +442,10 @@ function TeamSelect({
           ))}
         </select>
       </AdminField>
-      <AdminField label="Название">
+      <AdminField label={text.teamName}>
         <input className={inputClassName} value={name} onChange={(event) => onNameChange(event.target.value)} />
       </AdminField>
-      <AdminField label="Логотип или URL эмодзи">
+      <AdminField label={text.teamLogo}>
         <input className={inputClassName} value={logo} onChange={(event) => onLogoChange(event.target.value)} />
       </AdminField>
     </section>
@@ -379,12 +468,10 @@ function QuestionAnswerField({
   return (
     <AdminField label={label}>
       <div className="flex flex-col gap-2">
-        <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">
-          {questionText ?? "Вопрос для выбранного матча еще не задан."}
-        </div>
+        <div className="rounded-md bg-surface px-3 py-2 text-sm text-muted">{questionText ?? text.noQuestionYet}</div>
         <select className={inputClassName} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
-          <option value="true">Да</option>
-          <option value="false">Нет</option>
+          <option value="true">{text.yes}</option>
+          <option value="false">{text.no}</option>
         </select>
       </div>
     </AdminField>
@@ -394,7 +481,7 @@ function QuestionAnswerField({
 function formatQuestionReadiness(match: Match): string {
   const publicCount = match.public_questions_count ?? 0;
   const vipReady = Boolean(match.vip_question_exists);
-  return publicCount >= 2 && vipReady ? "Вопросы OK" : `Вопросы ${publicCount}/2${vipReady ? " + VIP" : ""}`;
+  return publicCount >= 2 && vipReady ? text.questionsOk : `${text.questionsPrefix} ${publicCount}/2${vipReady ? " + VIP" : ""}`;
 }
 
 function formatAdminMatchOptionWithStatus(match: Match): string {
@@ -415,7 +502,7 @@ function QuestionReadinessBadge({ match }: { match: Match }) {
           : "inline-flex rounded-md bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800"
       }
     >
-      {isComplete ? "Вопросы настроены" : `Вопросы: ${publicCount}/2, VIP ${vipReady ? "есть" : "нет"}`}
+      {isComplete ? text.questionsConfigured : `${text.questionsPrefix}: ${publicCount}/2, VIP ${vipReady ? text.vipExists : text.vipMissing}`}
     </span>
   );
 }

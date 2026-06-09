@@ -28,3 +28,9 @@ class TeamRead(TeamBase):
     id: int
     created_at: datetime
     updated_at: datetime
+
+
+class TeamSeedSummaryRead(BaseModel):
+    created: int
+    updated: int
+    total: int

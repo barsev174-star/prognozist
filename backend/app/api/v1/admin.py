@@ -31,7 +31,7 @@ from app.schemas.match import MatchCreate, MatchQuestionsRead, MatchRead, MatchR
 from app.schemas.question import QuestionCreate, QuestionRead, QuestionUpdate
 from app.schemas.season import SeasonCreate, SeasonRead, SeasonUpdate
 from app.schemas.star import AdminStarsSummaryRead, AdminStarTransactionRead, StarAmountRead
-from app.schemas.team import TeamCreate, TeamRead
+from app.schemas.team import TeamCreate, TeamRead, TeamSeedSummaryRead
 from app.schemas.tournament import (
     TournamentCompletionReadinessRead,
     TournamentCompletionResultRead,
@@ -59,6 +59,7 @@ from app.services.autoposting import (
 from app.services.scoring import score_completed_match
 from app.services.tournaments import complete_tournament, get_completion_readiness
 from app.services.telegram_bot_api import get_my_star_balance, get_star_transactions
+from app.services.team_seed import seed_world_cup_2026_teams
 from app.services.tournament_predictions import (
     build_tournament_prediction_resolution_summary,
     resolve_tournament_prediction_question,
@@ -286,6 +287,13 @@ def create_team(payload: TeamCreate, db: Session = Depends(get_db)) -> Team:
     db.commit()
     db.refresh(team)
     return team
+
+
+@router.post("/teams/seed-world-cup-2026", response_model=TeamSeedSummaryRead)
+def seed_teams_for_world_cup_2026(db: Session = Depends(get_db)) -> TeamSeedSummaryRead:
+    created, updated = seed_world_cup_2026_teams(db)
+    db.commit()
+    return TeamSeedSummaryRead(created=created, updated=updated, total=created + updated)
 
 
 @router.get("/tournaments/{tournament_id}/prediction-questions", response_model=list[TournamentPredictionQuestionRead])

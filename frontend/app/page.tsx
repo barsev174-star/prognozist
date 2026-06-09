@@ -51,24 +51,29 @@ function HomeDashboard({ user }: { user: UserProfile }) {
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([
+    Promise.allSettled([
       apiGet<Match[]>("/matches"),
       apiGet<TournamentPredictionPendingSummary[]>("/tournaments/mine/pending-summary"),
-    ])
-      .then(([matches, tournamentSummary]) => {
-        if (!isMounted) {
-          return;
-        }
-        setPendingMatchesCount(getPendingActiveMatchesCount(matches, canAnswerVip));
-        setPendingTournamentCount(getPendingTournamentQuestionsCount(tournamentSummary));
-      })
-      .catch(() => {
+    ]).then(([matchesResult, tournamentsResult]) => {
+      if (!isMounted) {
+        return;
+      }
+
+      if (matchesResult.status === "fulfilled") {
+        setPendingMatchesCount(getPendingActiveMatchesCount(matchesResult.value, canAnswerVip));
+      } else {
         if (!isMounted) {
           return;
         }
         setPendingMatchesCount(0);
+      }
+
+      if (tournamentsResult.status === "fulfilled") {
+        setPendingTournamentCount(getPendingTournamentQuestionsCount(tournamentsResult.value));
+      } else {
         setPendingTournamentCount(0);
-      });
+      }
+    });
 
     return () => {
       isMounted = false;

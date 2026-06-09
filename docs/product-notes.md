@@ -105,6 +105,10 @@ Safe pattern:
 
 or use a constant/expression.
 
+Practical note from local testing:
+
+- if old test users were created while text encoding was already damaged, those saved names can keep showing mojibake in logs until the records are refreshed or replaced.
+
 ## Monetization Notes
 
 ### Current position
@@ -176,6 +180,7 @@ Current practical step:
 - use in-app visibility first, not bot spam;
 - home now shows counters for pending match actions and unanswered tournament prediction questions;
 - match cards and tournament cards now surface `NEW` / pending counts where needed.
+- home counters now fail softly per section: if tournament summary fails, match reminders still stay visible.
 
 Future wishlist:
 
@@ -211,6 +216,7 @@ Current team handling is still transitional.
 What exists:
 
 - World Cup 2026 team list support in admin creation flow
+- one-click team seeding in admin when the directory is empty
 - logo/flag-based placeholders
 
 What should happen next:
