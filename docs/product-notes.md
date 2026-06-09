@@ -80,6 +80,10 @@ Polish target screens:
 - profile
 - referrals
 
+Recent local polish note:
+
+- the match prediction block on mobile now places the score inputs on a separate row under the team names so long team names do not crush the layout.
+
 ## Important Technical Note About Russian Text
 
 There were two different text problems during recent work:
@@ -145,6 +149,12 @@ Current value framing:
 - one VIP question per match;
 - extra points for correct VIP answers;
 - private VIP channel distribution with invite-link recovery inside the Mini App.
+- expert forecast publication into the VIP channel;
+- automatic post after match completion with:
+  - final score;
+  - public/VIP answers;
+  - audience average prediction;
+  - comparison against expert forecast.
 
 Still important:
 
@@ -152,6 +162,7 @@ Still important:
   - bot creates invite links;
   - bot can publish into the channel;
   - active VIP user can reopen the stored invite link later from the Mini App.
+- manual expert publication must never show as "published" if the VIP channel is not configured or unavailable.
 
 ## Leagues Notes
 

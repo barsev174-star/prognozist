@@ -143,9 +143,9 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
   return (
     <div className="flex flex-col gap-4">
       <section className="overflow-hidden rounded-[28px] border border-black/5 bg-[linear-gradient(135deg,#103b35_0%,#172033_62%,#264653_100%)] p-5 text-white shadow-[0_18px_55px_rgba(23,32,51,0.18)]">
-        <div className="flex items-center gap-3 text-lg font-semibold">
+        <div className="grid grid-cols-[40px_1fr_40px] items-center gap-3 text-lg font-semibold">
           <TeamLogo logo={match.team_1_logo} name={match.team_1} size="lg" />
-          <span className="min-w-0 flex-1 text-center">
+          <span className="min-w-0 text-center break-words leading-tight">
             {match.team_1} - {match.team_2}
           </span>
           <TeamLogo logo={match.team_2_logo} name={match.team_2} size="lg" />
@@ -204,30 +204,36 @@ export function MatchPredictionForm({ matchId }: MatchPredictionFormProps) {
           <div className="mt-1 text-base font-semibold">{isLocked ? fixedLabel : quickQuestionsLabel}</div>
         </div>
 
-        <div className="grid grid-cols-[1fr_68px_68px_1fr] items-center gap-2 rounded-[22px] bg-[rgba(23,32,51,0.04)] p-3">
-          <div className="flex items-center gap-2 text-sm">
-            <TeamLogo logo={match.team_1_logo} name={match.team_1} size="sm" />
-            <span>{match.team_1}</span>
+        <div className="rounded-[22px] bg-[rgba(23,32,51,0.04)] p-3">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
+            <div className="flex min-w-0 items-center gap-2 text-sm">
+              <TeamLogo logo={match.team_1_logo} name={match.team_1} size="sm" />
+              <span className="min-w-0 break-words leading-tight">{match.team_1}</span>
+            </div>
+            <span className="pt-1 text-sm font-semibold text-muted">vs</span>
+            <div className="flex min-w-0 items-center justify-end gap-2 text-right text-sm">
+              <span className="min-w-0 break-words leading-tight">{match.team_2}</span>
+              <TeamLogo logo={match.team_2_logo} name={match.team_2} size="sm" />
+            </div>
           </div>
-          <input
-            className="rounded-2xl border border-black/10 bg-white px-3 py-2 text-center disabled:bg-surface disabled:text-muted"
-            disabled={isLocked}
-            min={0}
-            type="number"
-            value={score1}
-            onChange={(event) => setScore1(event.target.value)}
-          />
-          <input
-            className="rounded-2xl border border-black/10 bg-white px-3 py-2 text-center disabled:bg-surface disabled:text-muted"
-            disabled={isLocked}
-            min={0}
-            type="number"
-            value={score2}
-            onChange={(event) => setScore2(event.target.value)}
-          />
-          <div className="flex items-center justify-end gap-2 text-right text-sm">
-            <span>{match.team_2}</span>
-            <TeamLogo logo={match.team_2_logo} name={match.team_2} size="sm" />
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <input
+              className="w-16 rounded-2xl border border-black/10 bg-white px-3 py-2 text-center disabled:bg-surface disabled:text-muted"
+              disabled={isLocked}
+              min={0}
+              type="number"
+              value={score1}
+              onChange={(event) => setScore1(event.target.value)}
+            />
+            <span className="text-base font-semibold text-muted">:</span>
+            <input
+              className="w-16 rounded-2xl border border-black/10 bg-white px-3 py-2 text-center disabled:bg-surface disabled:text-muted"
+              disabled={isLocked}
+              min={0}
+              type="number"
+              value={score2}
+              onChange={(event) => setScore2(event.target.value)}
+            />
           </div>
         </div>
 

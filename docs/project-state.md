@@ -175,6 +175,14 @@ Known recent service-clone history before this design batch:
 - World Cup 2026 seed data now writes Russian team names and flag-based logos by default;
 - player and admin match APIs now prefer the linked team directory name/logo over stale saved match text, so old matches can switch to Russian names and flags after a team-directory refresh;
 - support and referrals pages were normalized to use safe JSX expressions/constants for Russian labels, placeholders, and counters instead of raw rendered escape sequences;
+- expert prediction admin flow now has cleaned Russian text and clearer publish feedback;
+- manual expert publication no longer marks a forecast as published if the VIP channel is missing or unavailable;
+- automatic VIP-channel posts remain enabled for:
+  - expert forecast publication;
+  - completed match result with audience vs expert comparison;
+  - tournament completion;
+  - league completion;
+- match prediction layout in the Mini App was tightened for narrow screens by moving score inputs into a dedicated row under the team names;
 - release polish pass started for key player-facing screens:
   - home
   - matches list

@@ -493,11 +493,24 @@ def complete_tournament_endpoint(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     db.commit()
-    asyncio.run(publish_to_vip_channel(format_tournament_result_post(db, tournament.id)))
+    tournament_publish = asyncio.run(publish_to_vip_channel(format_tournament_result_post(db, tournament.id)))
+    if not tournament_publish.ok:
+        add_system_log(
+            db,
+            "vip_channel_publish_failed",
+            payload={"context": "tournament_complete", "tournament_id": tournament.id, "detail": tournament_publish.detail},
+        )
     for league_id in result.archived_league_ids:
         league = db.get(League, league_id)
         if league is not None:
-            asyncio.run(publish_to_vip_channel(format_league_result_post(db, league)))
+            league_publish = asyncio.run(publish_to_vip_channel(format_league_result_post(db, league)))
+            if not league_publish.ok:
+                add_system_log(
+                    db,
+                    "vip_channel_publish_failed",
+                    payload={"context": "league_complete", "league_id": league.id, "detail": league_publish.detail},
+                )
+    db.commit()
     return TournamentCompletionResultRead(
         tournament_id=result.tournament_id,
         tournament_results_created=result.tournament_results_created,
@@ -603,7 +616,9 @@ def publish_expert_prediction(
 
     questions = list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc(), Question.id.asc())))
     vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
-    asyncio.run(publish_to_vip_channel(format_expert_prediction_post(match, expert, questions, vip_question)))
+    publish_result = asyncio.run(publish_to_vip_channel(format_expert_prediction_post(match, expert, questions, vip_question)))
+    if not publish_result.ok:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=publish_result.detail)
 
     expert.is_published = True
     expert.published_at = datetime.now(UTC)
@@ -744,7 +759,15 @@ def enter_match_result(
     db.commit()
     db.refresh(match)
     expert = db.scalar(select(ExpertPrediction).where(ExpertPrediction.match_id == match.id))
-    asyncio.run(publish_to_vip_channel(format_match_result_post(db, match, expert)))
+    publish_result = asyncio.run(publish_to_vip_channel(format_match_result_post(db, match, expert)))
+    if not publish_result.ok:
+        add_system_log(
+            db,
+            "vip_channel_publish_failed",
+            user=current_admin,
+            payload={"context": "match_result", "match_id": match.id, "detail": publish_result.detail},
+        )
+        db.commit()
     return match
 
 

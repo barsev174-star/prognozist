@@ -159,7 +159,7 @@ function MatchCard({ match, subdued, canAnswerVip }: { match: Match; subdued: bo
               <div className="flex min-w-0 items-center gap-3">
                 <TeamLogo logo={match.team_1_logo} name={match.team_1} size="md" />
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">{match.team_1}</div>
+                  <div className="text-sm font-semibold leading-tight break-words">{match.team_1}</div>
                   <div className="mt-1 text-xs text-muted">{homeSideLabel}</div>
                 </div>
               </div>
@@ -168,7 +168,7 @@ function MatchCard({ match, subdued, canAnswerVip }: { match: Match; subdued: bo
               </div>
               <div className="mt-3 flex min-w-0 items-center justify-end gap-3 text-right">
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">{match.team_2}</div>
+                  <div className="text-sm font-semibold leading-tight break-words">{match.team_2}</div>
                   <div className="mt-1 text-xs text-muted">{awaySideLabel}</div>
                 </div>
                 <TeamLogo logo={match.team_2_logo} name={match.team_2} size="md" />
