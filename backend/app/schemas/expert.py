@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.expert import ExpertPostPublishSource
+
 
 class ExpertPredictionCreate(BaseModel):
     match_id: int
@@ -33,6 +35,8 @@ class ExpertPredictionRead(BaseModel):
     vip_question_answer: bool | None
     is_published: bool
     published_at: datetime | None
+    publish_source: ExpertPostPublishSource | None
+    result_post_published_at: datetime | None
     created_at: datetime
     updated_at: datetime
 

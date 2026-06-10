@@ -1,10 +1,16 @@
 from datetime import datetime
+from enum import Enum
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Enum as SqlEnum, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.mixins import TimestampMixin
+
+
+class ExpertPostPublishSource(str, Enum):
+    manual = "manual"
+    automatic = "automatic"
 
 
 class ExpertPrediction(TimestampMixin, Base):
@@ -25,6 +31,11 @@ class ExpertPrediction(TimestampMixin, Base):
     vip_question_answer: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    publish_source: Mapped[ExpertPostPublishSource | None] = mapped_column(
+        SqlEnum(ExpertPostPublishSource, name="expert_post_publish_source"),
+        nullable=True,
+    )
+    result_post_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     match: Mapped["Match"] = relationship()
     expert_user: Mapped["User | None"] = relationship()

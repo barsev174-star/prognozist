@@ -24,6 +24,8 @@ type ExpertPrediction = {
   vip_question_answer: boolean | null;
   is_published: boolean;
   published_at: string | null;
+  publish_source: "manual" | "automatic" | null;
+  result_post_published_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -53,28 +55,33 @@ const text = {
   vipAnswer: "Ответ на VIP-вопрос",
   saveButton: "Сохранить прогноз",
   createButton: "Создать прогноз",
-  publishButton: "Опубликовать",
+  publishButton: "Опубликовать вручную",
   loading: "Загрузка...",
   questionsTitle: "Вопросы выбранного матча",
-  previewPublic1: "Публичный вопрос эксперта 1",
-  previewPublic2: "Публичный вопрос эксперта 2",
+  previewPublic1: "Публичный вопрос 1",
+  previewPublic2: "Публичный вопрос 2",
   previewVip: "VIP-вопрос",
   summaryForecast: "Прогноз",
   summaryStatus: "Статус",
   summaryPublishedAt: "Публикация",
+  summaryResultPost: "Итоговый пост",
   statusPublished: "опубликован",
   statusDraft: "черновик",
   statusMissing: "нет",
+  statusManual: "вручную",
+  statusAutomatic: "автоматически",
   unpublished: "не создан",
   unpublishedDate: "нет",
   helper:
-    "После публикации прогноз уходит в VIP-канал. После завершения матча итог и сравнение с прогнозом эксперта отправляются автоматически.",
+    "Сохраняйте экспертный прогноз заранее. Когда матч начнется, черновик может уйти в VIP автоматически, а после завершения матча итоговый разбор отправится сам.",
   noQuestion: "Вопрос для выбранного матча не задан.",
   noValue: "Не указывать",
   yes: "Да",
   no: "Нет",
   notSet: "Не задан",
   pointsSuffix: "балл.",
+  resultPublished: "отправлен",
+  resultPending: "ждет завершения матча",
 };
 
 const emptyForm: ExpertForm = {
@@ -313,10 +320,23 @@ function MatchSummary({ match, prediction }: { match: Match; prediction: ExpertP
           {status.label}
         </span>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-4">
         <Metric label={text.summaryForecast} value={prediction ? `${prediction.predicted_team_1_score}:${prediction.predicted_team_2_score}` : text.unpublished} />
-        <Metric label={text.summaryStatus} value={prediction?.is_published ? text.statusPublished : prediction ? text.statusDraft : text.statusMissing} />
+        <Metric
+          label={text.summaryStatus}
+          value={
+            prediction?.is_published
+              ? `${text.statusPublished} · ${prediction.publish_source === "automatic" ? text.statusAutomatic : text.statusManual}`
+              : prediction
+                ? text.statusDraft
+                : text.statusMissing
+          }
+        />
         <Metric label={text.summaryPublishedAt} value={prediction?.published_at ? formatMatchDate(prediction.published_at) : text.unpublishedDate} />
+        <Metric
+          label={text.summaryResultPost}
+          value={prediction?.result_post_published_at ? `${text.resultPublished} · ${formatMatchDate(prediction.result_post_published_at)}` : text.resultPending}
+        />
       </div>
     </div>
   );

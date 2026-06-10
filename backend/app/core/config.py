@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     telegram_discussion_group_id: str = ""
     vip_default_duration_days: int = 30
     vip_stars_amount: int = 100
+    expert_autopost_enabled: bool = True
+    expert_autopost_interval_seconds: int = 60
 
     @cached_property
     def cors_origins(self) -> list[str]:

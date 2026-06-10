@@ -23,7 +23,7 @@ function looksBrokenCyrillic(value: string): boolean {
 
 function formatUser(log: { first_name: string | null; username: string | null; telegram_id: number | null }): string {
   if (log.first_name && !looksBrokenCyrillic(log.first_name)) {
-    return log.first_name;
+  return log.username ? `${log.first_name} (@${log.username})` : log.first_name;
   }
   if (log.username) {
     return `@${log.username}`;
@@ -75,14 +75,30 @@ function formatSystemPayload(log: AdminSystemLog): string {
     const category = log.payload_json["category"];
     const message = log.payload_json["message"];
     const source = log.payload_json["source"];
+    const user = asRecord(log.payload_json["user"]);
     return [
       `category: ${String(category ?? "-")}`,
       `source: ${String(source ?? "-")}`,
+      `user: ${formatPayloadUser(user)}`,
       "",
       String(message ?? ""),
     ].join("\n");
   }
 
+  if (log.event_type === "admin_vip_granted") {
+    const targetUser = asRecord(log.payload_json["target_user"]);
+    const durationDays = log.payload_json["duration_days"];
+    const inviteCreated = log.payload_json["invite_link_created"];
+    const inviteError = log.payload_json["invite_link_error"];
+    return [
+      `target: ${formatPayloadUser(targetUser)}`,
+      `duration_days: ${String(durationDays ?? "-")}`,
+      `invite_link_created: ${String(inviteCreated ?? false)}`,
+      inviteError ? `invite_link_error: ${String(inviteError)}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
   return JSON.stringify(log.payload_json, null, 2);
 }
 
@@ -277,4 +293,32 @@ function PointsLogsList({ logs }: { logs: AdminPointsLog[] }) {
       ))}
     </div>
   );
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function formatPayloadUser(user: Record<string, unknown> | null): string {
+  if (!user) {
+    return "-";
+  }
+
+  const firstName = typeof user["first_name"] === "string" ? user["first_name"] : null;
+  const username = typeof user["username"] === "string" ? user["username"] : null;
+  const telegramId = typeof user["telegram_id"] === "number" || typeof user["telegram_id"] === "string" ? String(user["telegram_id"]) : null;
+
+  if (firstName && !looksBrokenCyrillic(firstName)) {
+    if (username) {
+      return `${firstName} (@${username})`;
+    }
+    if (telegramId) {
+      return `${firstName} · telegram ${telegramId}`;
+    }
+    return firstName;
+  }
+  if (username) {
+    return telegramId ? `@${username} · telegram ${telegramId}` : `@${username}`;
+  }
+  return telegramId ? `telegram ${telegramId}` : "-";
 }

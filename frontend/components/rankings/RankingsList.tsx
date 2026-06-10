@@ -11,6 +11,7 @@ const emptyLabel = "\u0420\u0435\u0439\u0442\u0438\u043d\u0433 \u043f\u043e\u043
 const ladderTitle = "\u0411\u043e\u0440\u044c\u0431\u0430 \u0437\u0430 \u043e\u0431\u0449\u0438\u0439 \u0442\u043e\u043f";
 const prizeTbdLabel = "\u0423\u0442\u043e\u0447\u043d\u044f\u0435\u0442\u0441\u044f";
 const currentUserLabel = "\u0412\u044b \u0441\u0435\u0439\u0447\u0430\u0441 \u0432 \u0442\u0430\u0431\u043b\u0438\u0446\u0435";
+const currentUserBadge = "\u042d\u0442\u043e \u0432\u044b";
 const yourPositionLabel = "\u0412\u0430\u0448\u0430 \u043f\u043e\u0437\u0438\u0446\u0438\u044f";
 const pointsLabel = "\u043e\u0447\u043a\u043e\u0432";
 
@@ -66,7 +67,7 @@ export function RankingsList() {
         {ranking.entries.map((entry, index) => (
           <div
             key={entry.user_id}
-            className={`flex items-center justify-between border-b border-black/5 p-4 last:border-b-0 ${entry.is_current_user ? "bg-[rgba(15,118,110,0.07)]" : ""}`}
+            className={`flex items-center justify-between border-b border-black/5 p-4 last:border-b-0 ${entry.is_current_user ? "bg-[rgba(15,118,110,0.10)] ring-1 ring-[rgba(15,118,110,0.18)]" : ""}`}
           >
             <div className="flex items-center gap-3">
               <div
@@ -79,8 +80,11 @@ export function RankingsList() {
                 #{entry.rank}
               </div>
               <div>
-                <div className="text-sm font-semibold">{entry.first_name ?? entry.username ?? `user ${entry.telegram_id}`}</div>
-                <div className="mt-1 text-xs text-muted">{entry.is_current_user ? currentUserLabel : `telegram id ${entry.telegram_id}`}</div>
+                <div className="text-sm font-semibold">{getRankingDisplayName(entry)}</div>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
+                  <span>{entry.is_current_user ? currentUserLabel : getRankingSecondaryLabel(entry)}</span>
+                  {entry.is_current_user ? <span className="rounded-full bg-[rgba(15,118,110,0.12)] px-2 py-0.5 text-[11px] font-semibold text-accent">{currentUserBadge}</span> : null}
+                </div>
               </div>
             </div>
             <div className="rounded-full bg-[rgba(23,32,51,0.05)] px-3 py-1 text-sm font-semibold">{entry.points}</div>
@@ -107,4 +111,12 @@ function PrizeCard({ place, prize }: { place: string; prize: string }) {
       <div className="mt-2 text-xs text-white/78">{prize}</div>
     </div>
   );
+}
+
+function getRankingDisplayName(entry: RankingResponse["entries"][number]): string {
+  return entry.first_name ?? (entry.username ? `@${entry.username}` : "\u0418\u0433\u0440\u043e\u043a");
+}
+
+function getRankingSecondaryLabel(entry: RankingResponse["entries"][number]): string {
+  return entry.username ? `@${entry.username}` : "\u0438\u0433\u0440\u043e\u043a \u0440\u0435\u0439\u0442\u0438\u043d\u0433\u0430";
 }

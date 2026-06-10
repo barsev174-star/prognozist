@@ -353,15 +353,15 @@ function buildLeagueInviteTextSafe(league: League, tournamentName: string): stri
 function LeagueRankingRow({ entry }: { entry: RankingEntry }) {
   return (
     <div
-      className={`flex items-center justify-between rounded-2xl px-3 py-2 text-sm ${entry.is_current_user ? "bg-[rgba(15,118,110,0.08)]" : "bg-white/80"}`}
+      className={`flex items-center justify-between rounded-2xl px-3 py-2 text-sm ${entry.is_current_user ? "bg-[rgba(15,118,110,0.10)] ring-1 ring-[rgba(15,118,110,0.16)]" : "bg-white/80"}`}
     >
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[rgba(23,32,51,0.06)] text-xs font-semibold text-muted">
           #{entry.rank}
         </div>
         <div>
-          <div className="font-semibold text-ink">{entry.first_name ?? entry.username ?? `user ${entry.telegram_id}`}</div>
-          <div className="text-xs text-muted">{entry.is_current_user ? currentPlayerLabel : `id ${entry.telegram_id}`}</div>
+          <div className="font-semibold text-ink">{entry.first_name ?? (entry.username ? `@${entry.username}` : "Игрок")}</div>
+          <div className="text-xs text-muted">{entry.is_current_user ? currentPlayerLabel : entry.username ? `@${entry.username}` : "участник лиги"}</div>
         </div>
       </div>
       <div className="rounded-full bg-[rgba(23,32,51,0.05)] px-3 py-1 text-sm font-semibold">
