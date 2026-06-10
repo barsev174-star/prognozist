@@ -23,4 +23,8 @@ postgres_data/
 # Editors
 .idea/
 .vscode/
+.codex-local-commit/
+.codex-push-check/
+.tmp_pydeps/
+
 
