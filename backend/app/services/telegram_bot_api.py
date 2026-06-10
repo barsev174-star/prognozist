@@ -4,6 +4,7 @@ import httpx
 
 from app.core.config import settings
 from app.schemas.star import AdminStarTransactionRead, StarAmountRead
+from datetime import UTC, datetime, timedelta
 
 BOT_API_BASE_URL = "https://api.telegram.org"
 
@@ -36,6 +37,26 @@ def get_star_transactions(limit: int = 20) -> list[AdminStarTransactionRead]:
     result = _call_bot_api("getStarTransactions", {"offset": 0, "limit": min(max(limit, 1), 100)})
     rows = result.get("transactions", [])
     return [_parse_star_transaction(row) for row in rows]
+    
+def create_vip_channel_invite_link(telegram_user_id: int, duration_days: int) -> str:
+    if not settings.telegram_vip_channel_id:
+        raise RuntimeError("VIP channel is not configured")
+
+    expire_at = datetime.now(UTC) + timedelta(days=max(duration_days, 1))
+    result = _call_bot_api(
+        "createChatInviteLink",
+        {
+            "chat_id": settings.telegram_vip_channel_id,
+            "member_limit": 1,
+            "creates_join_request": False,
+            "expire_date": int(expire_at.timestamp()),
+            "name": f"vip-{telegram_user_id}-{int(datetime.now(UTC).timestamp())}",
+        },
+    )
+    invite_link = result.get("invite_link")
+    if not invite_link:
+        raise RuntimeError("Telegram did not return invite link")
+    return invite_link    
 
 
 def notify_admins(text: str) -> None:
