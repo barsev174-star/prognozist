@@ -84,6 +84,7 @@ export function MatchesAdmin() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<MatchQuestions | null>(null);
   const [isSeedingTeams, setIsSeedingTeams] = useState(false);
+  const [isCompletingMatch, setIsCompletingMatch] = useState(false);
   const [form, setForm] = useState<MatchForm>({
     tournament_id: "",
     team_1_id: "",
@@ -196,6 +197,7 @@ export function MatchesAdmin() {
   async function completeMatch(event: React.FormEvent) {
     event.preventDefault();
     setMessage(null);
+    setIsCompletingMatch(true);
 
     try {
       await apiPost<Match>(`/admin/matches/${resultForm.match_id}/result`, {
@@ -206,11 +208,24 @@ export function MatchesAdmin() {
         ),
         vip_correct_answer: resultForm.vip_correct_answer === "true",
       });
-      setMessage(text.completeSuccess);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("detail")) {
+        setMessage(error.message.replace("API request failed: ", ""));
+      } else {
+        setMessage(text.completeError);
+      }
+      setIsCompletingMatch(false);
+      return;
+    }
+
+    try {
       await load();
       await loadQuestions(resultForm.match_id);
+      setMessage(text.completeSuccess);
     } catch {
-      setMessage(text.completeError);
+      setMessage("Матч завершен, но список не удалось обновить автоматически. Обновите страницу.");
+    } finally {
+      setIsCompletingMatch(false);
     }
   }
 
@@ -367,7 +382,7 @@ export function MatchesAdmin() {
           disabled={isSelectedResultCompleted}
           onChange={(value) => setResultForm({ ...resultForm, vip_correct_answer: value })}
         />
-        <button disabled={isSelectedResultCompleted} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+        <button disabled={isSelectedResultCompleted || isCompletingMatch} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
           {isSelectedResultCompleted ? text.completedButton : text.completeButton}
         </button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}

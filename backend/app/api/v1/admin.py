@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.permissions import get_current_admin
 from app.db.session import get_db
 from app.models import (
+    ExpertPostPublishSource,
     ExpertPrediction,
     League,
     Match,
@@ -49,16 +50,18 @@ from app.schemas.tournament_prediction import (
     TournamentPredictionQuestionUpdate,
 )
 from app.schemas.user import UserAdminUpdate, UserGrantVipRequest, UserProfile
-from app.services.autoposting import (
+from app.services.autoposting_clean import (
     format_expert_prediction_post,
     format_league_result_post,
     format_match_result_post,
     format_tournament_result_post,
+    publish_due_expert_predictions,
+    publish_expert_prediction_post,
     publish_to_vip_channel,
 )
 from app.services.scoring import score_completed_match
 from app.services.tournaments import complete_tournament, get_completion_readiness
-from app.services.telegram_bot_api import get_my_star_balance, get_star_transactions
+from app.services.telegram_bot_api import create_vip_channel_invite_link, get_my_star_balance, get_star_transactions
 from app.services.team_seed import seed_world_cup_2026_teams
 from app.services.tournament_predictions import (
     build_tournament_prediction_resolution_summary,
@@ -76,6 +79,29 @@ def ensure_date_range(start_date, end_date) -> None:
 
 def add_system_log(db: Session, event_type: str, user: User | None = None, payload: dict | None = None) -> None:
     db.add(SystemLog(event_type=event_type, user_id=user.id if user else None, payload_json=payload))
+
+
+def build_user_snapshot(user: User) -> dict[str, int | str | None]:
+    return {
+        "user_id": user.id,
+        "telegram_id": user.telegram_id,
+        "username": user.username,
+        "first_name": user.first_name,
+    }
+
+
+def add_vip_publish_failure_log(
+    db: Session,
+    *,
+    context: str,
+    detail: str,
+    user: User | None = None,
+    extra_payload: dict | None = None,
+) -> None:
+    payload = {"context": context, "detail": detail}
+    if extra_payload:
+        payload.update(extra_payload)
+    add_system_log(db, "vip_channel_publish_failed", user=user, payload=payload)
 
 
 @router.get("/me", response_model=UserProfile)
@@ -167,7 +193,7 @@ def update_user(
         db,
         "admin_user_updated",
         user=current_admin,
-        payload={"target_user_id": user.id, "changes": log_changes},
+        payload={"target_user": build_user_snapshot(user), "changes": log_changes},
     )
     db.commit()
     db.refresh(user)
@@ -185,18 +211,33 @@ def grant_user_vip(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    invite_link: str | None = None
+    invite_link_error: str | None = None
+    try:
+        invite_link = create_vip_channel_invite_link(user.telegram_id, payload.duration_days)
+    except Exception as exc:
+        invite_link_error = str(exc)
+
     activate_vip_subscription(
         db,
         user,
         telegram_payment_charge_id=f"admin:{user.id}:{datetime.now(UTC).isoformat()}",
         stars_amount=0,
         duration_days=payload.duration_days,
+        invite_link=invite_link,
     )
+    log_payload = {
+        "target_user": build_user_snapshot(user),
+        "duration_days": payload.duration_days,
+        "invite_link_created": bool(invite_link),
+    }
+    if invite_link_error:
+        log_payload["invite_link_error"] = invite_link_error
     add_system_log(
         db,
         "admin_vip_granted",
         user=current_admin,
-        payload={"target_user_id": user.id, "duration_days": payload.duration_days},
+        payload=log_payload,
     )
     db.commit()
     db.refresh(user)
@@ -602,29 +643,62 @@ def update_expert_prediction(
 def publish_expert_prediction(
     expert_prediction_id: int,
     db: Session = Depends(get_db),
-    _current_admin: User = Depends(get_current_admin),
+    current_admin: User = Depends(get_current_admin),
 ) -> ExpertPrediction:
     expert = db.get(ExpertPrediction, expert_prediction_id)
     if expert is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expert prediction not found")
     if expert.is_published:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Expert prediction is already published")
-
-    match = db.get(Match, expert.match_id)
-    if match is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
-
-    questions = list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc(), Question.id.asc())))
-    vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
-    publish_result = asyncio.run(publish_to_vip_channel(format_expert_prediction_post(match, expert, questions, vip_question)))
+    publish_result = publish_expert_prediction_post(db, expert, source=ExpertPostPublishSource.manual)
     if not publish_result.ok:
+        add_vip_publish_failure_log(
+            db,
+            context="expert_prediction_manual_publish",
+            detail=publish_result.detail,
+            user=current_admin,
+            extra_payload={"expert_prediction_id": expert.id, "match_id": expert.match_id},
+        )
+        db.commit()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=publish_result.detail)
-
-    expert.is_published = True
-    expert.published_at = datetime.now(UTC)
     db.commit()
     db.refresh(expert)
     return expert
+
+
+@router.post("/expert-predictions/process-due")
+def process_due_expert_predictions(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin),
+) -> dict[str, int]:
+    result = publish_due_expert_predictions(db)
+    if result.failed:
+        add_vip_publish_failure_log(
+            db,
+            context="expert_prediction_due_publish",
+            detail=f"failed={result.failed}",
+            user=current_admin,
+            extra_payload={
+                "checked": result.checked,
+                "published": result.published,
+                "failed_items": result.failed_items,
+            },
+        )
+    if result.published:
+        add_system_log(
+            db,
+            "expert_predictions_due_processed",
+            user=current_admin,
+            payload={
+                "checked": result.checked,
+                "published": result.published,
+                "failed": result.failed,
+                "published_items": result.published_items,
+                "failed_items": result.failed_items,
+            },
+        )
+    db.commit()
+    return {"checked": result.checked, "published": result.published, "failed": result.failed}
 
 
 @router.get("/matches", response_model=list[MatchRead])
@@ -715,59 +789,109 @@ def enter_match_result(
     if match.status == MatchStatus.completed:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Match is already completed")
 
-    match.team_1_score = payload.team_1_score
-    match.team_2_score = payload.team_2_score
-    match.status = MatchStatus.calculating
+    try:
+        match.team_1_score = payload.team_1_score
+        match.team_2_score = payload.team_2_score
+        match.status = MatchStatus.calculating
 
-    questions = list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc())))
-    public_answers = payload.public_correct_answers or {}
-    for question in questions:
-        correct_answer = public_answers.get(question.id)
-        if correct_answer is None and len(questions) == 1:
-            correct_answer = payload.public_correct_answer
-        if correct_answer is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Public question #{question.id} correct answer is required",
-            )
-        question.correct_answer = correct_answer
+        questions = list(db.scalars(select(Question).where(Question.match_id == match.id).order_by(Question.slot.asc())))
+        public_answers = payload.public_correct_answers or {}
+        for question in questions:
+            correct_answer = public_answers.get(question.id)
+            if correct_answer is None and len(questions) == 1:
+                correct_answer = payload.public_correct_answer
+            if correct_answer is None:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Public question #{question.id} correct answer is required",
+                )
+            question.correct_answer = correct_answer
 
-    vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
-    if vip_question is not None:
-        if payload.vip_correct_answer is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="VIP question correct answer is required",
-            )
-        vip_question.correct_answer = payload.vip_correct_answer
+        vip_question = db.scalar(select(VipQuestion).where(VipQuestion.match_id == match.id))
+        if vip_question is not None:
+            if payload.vip_correct_answer is None:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="VIP question correct answer is required",
+                )
+            vip_question.correct_answer = payload.vip_correct_answer
 
-    score_completed_match(db, match)
-    match.status = MatchStatus.completed
+        score_completed_match(db, match)
+        match.status = MatchStatus.completed
 
-    add_system_log(
-        db,
-        "admin_match_completed",
-        user=current_admin,
-        payload={
-            "match_id": match.id,
-            "team_1": match.team_1,
-            "team_2": match.team_2,
-            "team_1_score": match.team_1_score,
-            "team_2_score": match.team_2_score,
-        },
-    )
-    db.commit()
-    db.refresh(match)
-    expert = db.scalar(select(ExpertPrediction).where(ExpertPrediction.match_id == match.id))
-    publish_result = asyncio.run(publish_to_vip_channel(format_match_result_post(db, match, expert)))
-    if not publish_result.ok:
         add_system_log(
             db,
-            "vip_channel_publish_failed",
+            "admin_match_completed",
             user=current_admin,
-            payload={"context": "match_result", "match_id": match.id, "detail": publish_result.detail},
+            payload={
+                "match_id": match.id,
+                "team_1": match.team_1,
+                "team_2": match.team_2,
+                "team_1_score": match.team_1_score,
+                "team_2_score": match.team_2_score,
+            },
         )
         db.commit()
+        db.refresh(match)
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        add_system_log(
+            db,
+            "admin_match_complete_exception",
+            user=current_admin,
+            payload={"match_id": match_id, "error": str(exc), "error_type": exc.__class__.__name__},
+        )
+        db.commit()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+    expert = db.scalar(select(ExpertPrediction).where(ExpertPrediction.match_id == match.id))
+    if expert is None or expert.result_post_published_at is None:
+        try:
+            publish_result = asyncio.run(publish_to_vip_channel(format_match_result_post(db, match, expert)))
+        except Exception as exc:
+            add_vip_publish_failure_log(
+                db,
+                context="match_result_exception",
+                detail=str(exc),
+                user=current_admin,
+                extra_payload={
+                    "match_id": match.id,
+                    "expert_prediction_id": expert.id if expert is not None else None,
+                },
+            )
+            db.commit()
+            return match
+
+        if not publish_result.ok:
+            add_vip_publish_failure_log(
+                db,
+                context="match_result",
+                detail=publish_result.detail,
+                user=current_admin,
+                extra_payload={
+                    "match_id": match.id,
+                    "expert_prediction_id": expert.id if expert is not None else None,
+                },
+            )
+            db.commit()
+        else:
+            published_at = datetime.now(UTC)
+            if expert is not None:
+                expert.result_post_published_at = published_at
+            add_system_log(
+                db,
+                "vip_match_result_published",
+                user=current_admin,
+                payload={
+                    "match_id": match.id,
+                    "expert_prediction_id": expert.id if expert is not None else None,
+                    "published_at": published_at.isoformat(),
+                },
+            )
+            db.commit()
     return match
 
 

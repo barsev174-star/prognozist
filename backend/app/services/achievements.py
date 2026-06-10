@@ -17,7 +17,16 @@ def award_achievement(db: Session, user_id: int, code: str) -> bool:
     if achievement is None:
         return False
 
-    existing = db.get(UserAchievement, {"user_id": user_id, "achievement_id": achievement.id})
+    for pending in db.new:
+        if isinstance(pending, UserAchievement) and pending.user_id == user_id and pending.achievement_id == achievement.id:
+            return False
+
+    existing = db.scalar(
+        select(UserAchievement).where(
+            UserAchievement.user_id == user_id,
+            UserAchievement.achievement_id == achievement.id,
+        )
+    )
     if existing is not None:
         return False
 

@@ -150,11 +150,16 @@ function MatchCard({ match, subdued, canAnswerVip }: { match: Match; subdued: bo
   return (
     <Link
       href={`/matches/${match.id}`}
-      className={`group rounded-[24px] border border-black/5 bg-white/92 p-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)] transition-transform duration-200 hover:-translate-y-0.5 ${subdued ? "opacity-90" : ""}`}
+      className={`group relative rounded-[24px] border border-black/5 bg-white/92 p-4 shadow-[0_10px_30px_rgba(23,32,51,0.08)] transition-transform duration-200 hover:-translate-y-0.5 ${subdued ? "opacity-90" : ""}`}
     >
-      <div className="flex items-start justify-between gap-3">
+      {pendingCount > 0 ? (
+        <div className="pointer-events-none absolute right-4 top-4">
+          <span className="rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">NEW</span>
+        </div>
+      ) : null}
+      <div className={`flex items-start justify-between gap-3 ${pendingCount > 0 ? "pt-4" : ""}`}>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-3">
                 <TeamLogo logo={match.team_1_logo} name={match.team_1} size="md" />
@@ -174,7 +179,6 @@ function MatchCard({ match, subdued, canAnswerVip }: { match: Match; subdued: bo
                 <TeamLogo logo={match.team_2_logo} name={match.team_2} size="md" />
               </div>
             </div>
-            {pendingCount > 0 ? <span className="rounded-full bg-red-500 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">NEW</span> : null}
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted">

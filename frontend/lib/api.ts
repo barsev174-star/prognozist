@@ -323,7 +323,16 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    let detail = "";
+    try {
+      const payload = await response.json();
+      if (typeof payload?.detail === "string") {
+        detail = payload.detail;
+      }
+    } catch {
+      detail = "";
+    }
+    throw new Error(detail ? `API request failed: ${response.status}: ${detail}` : `API request failed: ${response.status}`);
   }
 
   return response.json() as Promise<T>;
