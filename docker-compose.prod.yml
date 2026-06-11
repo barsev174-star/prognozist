@@ -23,6 +23,8 @@ services:
     restart: unless-stopped
     env_file:
       - ${PROD_ENV_FILE:-.env.production}
+    extra_hosts:
+      - "api.telegram.org:149.154.167.220"
     depends_on:
       postgres:
         condition: service_healthy
